@@ -89,7 +89,7 @@ Inside an interactive Copilot CLI session, run:
 #### 1. Register the marketplace (one time only)
 
 ```bash
-copilot plugin marketplace add https://dev.azure.com/AtlasEnterpriseSoftware/AtlasSoftware/_git/Atlas.AI.Marketplace
+copilot plugin marketplace add https://github.com/Atlas-Enterprise-Software/atlas-ai/blob/main/
 ```
 
 #### 2. Install the plugin
@@ -116,7 +116,7 @@ Or within an interactive Copilot CLI session:
 #### 1. Register the marketplace (one time only)
 
 ```bash
-claude plugin marketplace add https://dev.azure.com/AtlasEnterpriseSoftware/AtlasSoftware/_git/Atlas.AI.Marketplace
+claude plugin marketplace add https://github.com/Atlas-Enterprise-Software/atlas-ai/blob/main/
 ```
 
 #### 2. Install the plugin
