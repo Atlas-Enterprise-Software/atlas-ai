@@ -1,0 +1,23 @@
+{
+  "skill_name": "atlas-azure-devops-pr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Compare this branch with main and draft a PR description for me. I want to see what would go in the PR before creating it.",
+      "expected_output": "A well-structured Markdown PR description with Summary, What changed, and Why sections, derived from the actual git diff against main. No PR should be created.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "create a PR for this branch",
+      "expected_output": "The skill should run the full workflow: inspect state, commit and push if needed, check for existing PR, and either create a new one or return the URL of the existing one. Final output is a PR URL.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "necesito hacer una PR para mis cambios, y enlázala al PBI 21960",
+      "expected_output": "The skill should create or update the PR (or detect the existing one) and link work item 21960 to it. Return the PR URL with confirmation of the linked work item.",
+      "files": []
+    }
+  ]
+}

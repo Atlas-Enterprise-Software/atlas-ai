@@ -1,0 +1,21 @@
+{
+  "name": "atlas-ai-plugins",
+  "description": "AI assistant plugin for the Atlas Development team. Bundles skills, agents, and hooks that standardize workflows across Atlas repositories.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Atlas Development",
+    "email": "rafael@atlassoftware.es"
+  },
+  "license": "MIT",
+  "keywords": [
+    "azure-devops",
+    "pull-request",
+    "atlas",
+    "work-items",
+    "workflow"
+  ],
+  "category": "workflow",
+  "skills": "skills/",
+  "agents": "agents/",
+  "hooks": "hooks/"
+}
