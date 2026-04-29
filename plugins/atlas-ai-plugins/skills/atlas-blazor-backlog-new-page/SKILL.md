@@ -1,5 +1,5 @@
 ---
-name: atlas-blazor-new-page
+name: atlas-blazor-backlog-new-page
 description: "Generate an Azure DevOps backlog for adding a new page or view to an existing Blazor module. Use this skill whenever the user wants to add a page, create a view, register a new route, or says 'add a page for X', 'create a view for Y', 'add route /z to the module', 'new screen for W'."
 version: 1.0.0
 ---

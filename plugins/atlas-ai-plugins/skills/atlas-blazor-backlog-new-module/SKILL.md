@@ -1,6 +1,6 @@
 ---
-name: atlas-blazor-new-module
-description: "Generate an Azure DevOps backlog for creating a completely new feature module in a Blazor application. Use this skill whenever the user wants to create a new module, scaffold a new section, or start a new feature area from scratch — phrases like 'create a new module for X', 'scaffold the Y module', 'start the Z section from scratch', 'nuevo módulo para W'. After scaffolding, use atlas-blazor-grid-page or atlas-blazor-side-panel-editor to add feature PBIs."
+name: atlas-blazor-backlog-new-module
+description: "Generate an Azure DevOps backlog for creating a completely new feature module in a Blazor application. Use this skill whenever the user wants to create a new module, scaffold a new section, or start a new feature area from scratch — phrases like 'create a new module for X', 'scaffold the Y module', 'start the Z section from scratch', 'nuevo módulo para W'. After scaffolding, use atlas-blazor-backlog-grid-page or atlas-blazor-backlog-side-panel-editor to add feature PBIs."
 version: 1.0.0
 ---
 
@@ -15,7 +15,7 @@ The application has independent feature modules following the convention `{AppNa
 - Registers its assembly for Blazor routing in `AdditionalAssemblies.cs`
 - Contains its own Razor components, services, models, and resources
 
-This skill generates the scaffolding backlog only. For subsequent feature work (grids, editors, components), use `atlas-blazor-grid-page`, `atlas-blazor-side-panel-editor`, or `atlas-blazor-new-component`.
+This skill generates the scaffolding backlog only. For subsequent feature work (grids, editors, components), use `atlas-blazor-backlog-grid-page`, `atlas-blazor-backlog-side-panel-editor`, or `atlas-blazor-backlog-new-component`.
 
 Produces: **EPIC (optional) → Feature → 4–5 PBIs**.
 
@@ -29,7 +29,7 @@ Act without asking:
 - Write all work item titles and descriptions in **English**
 - Use `{AppNamespace}.{ModuleName}` as the project naming convention — always
 - Always generate the full 4 scaffolding PBIs; add the sidebar PBI only if requested
-- After the preview is approved and items are created, suggest the next step: "Use `atlas-blazor-grid-page` or `atlas-blazor-side-panel-editor` to add feature PBIs to this module."
+- After the preview is approved and items are created, suggest the next step: "Use `atlas-blazor-backlog-grid-page` or `atlas-blazor-backlog-side-panel-editor` to add feature PBIs to this module."
 - Use MCP exclusively; attempt auto-install if not available
 
 Stop and ask only if:
@@ -199,9 +199,9 @@ items_created: {n}
 
 next_steps: >
   Module scaffolding is complete. To add feature PBIs (grids, editors, components) to this module, use:
-  - atlas-blazor-grid-page — for data listing pages with TelerikGrid
-  - atlas-blazor-side-panel-editor — for create/edit side panel editors
-  - atlas-blazor-new-component — for reusable components
+  - atlas-blazor-backlog-grid-page — for data listing pages with TelerikGrid
+  - atlas-blazor-backlog-side-panel-editor — for create/edit side panel editors
+  - atlas-blazor-backlog-new-component — for reusable components
 === end ===
 ```
 

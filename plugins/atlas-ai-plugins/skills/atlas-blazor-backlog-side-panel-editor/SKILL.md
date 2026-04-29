@@ -1,5 +1,5 @@
 ---
-name: atlas-blazor-side-panel-editor
+name: atlas-blazor-backlog-side-panel-editor
 description: "Generate an Azure DevOps backlog for adding create/edit/delete functionality in a lateral side panel to a Blazor module. Use this skill whenever the user wants a side panel editor, an edit drawer, create/edit forms in a panel — phrases like 'add a side panel editor for X', 'create an edit panel for Y', 'add create and edit to the Z grid', 'panel lateral de edición para W'."
 version: 1.0.0
 ---
