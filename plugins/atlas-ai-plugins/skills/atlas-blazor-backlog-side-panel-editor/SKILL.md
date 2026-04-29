@@ -392,7 +392,7 @@ private async Task OnConfirmEdit({EntityName}Model model) { /* TODO: call servic
 
 ```markdown
 ## Goal
-Define and implement BFF endpoints for `{EntityName}` create, update, get by ID{delete_and_delete}.
+Define and implement BFF endpoints for `{EntityName}` create, update, get by ID, and delete.
 
 ## Note
 This PBI belongs to the **backend / BFF team**. The editor uses mock submit until this is ready.
@@ -416,7 +416,7 @@ This PBI belongs to the **backend / BFF team**. The editor uses mock submit unti
 
 ```markdown
 ## Goal
-Extend `I{EntityName}Service` and `{EntityName}Service` with methods for create, update, get by ID{delete_and_delete}.
+Extend `I{EntityName}Service` and `{EntityName}Service` with methods for create, update, get by ID, and delete.
 
 ## Tasks
 

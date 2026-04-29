@@ -77,6 +77,12 @@ Wait for the reply before continuing.
 
 ---
 
+## Step 1b — Validate naming coherence
+
+Check that the module name and feature name are consistent with the application namespace and the module purpose described. If a mismatch is found, present it and wait for confirmation before proceeding.
+
+---
+
 ## Step 2 — Build item tree in memory
 
 ### EPIC (if creating)
