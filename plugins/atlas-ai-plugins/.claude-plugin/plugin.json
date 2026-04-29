@@ -1,0 +1,17 @@
+{
+  "name": "atlas-ai-plugins",
+  "description": "Skills, agents, and hooks for the Atlas Development team",
+  "version": "1.0.0",
+  "author": {
+    "name": "Atlas Development",
+    "email": "rafael@atlassoftware.es"
+  },
+  "license": "MIT",
+  "keywords": [
+    "azure-devops",
+    "pull-request",
+    "atlas",
+    "work-items",
+    "workflow"
+  ]
+}

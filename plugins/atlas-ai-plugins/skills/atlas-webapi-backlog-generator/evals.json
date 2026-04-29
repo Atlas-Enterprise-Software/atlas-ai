@@ -1,0 +1,41 @@
+{
+  "skill_name": "atlas-webapi-backlog-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "crea el backlog para la API de Projects",
+      "expected_output": "The skill should ask for all missing inputs in a single message: entity name(s), API name, Feature name(s), API context description, EPIC decision, and whether the API is new or already exists. It must NOT create any work item yet.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "create backlog for the ProjectTemplate API. Entity: ProjectTemplate, Feature: Project Template Management, context: manages reusable project templates for software development. Skip EPIC. New API.",
+      "expected_output": "The skill should validate naming coherence, infer FluentValidation rules from the context, render an 8-item ASCII preview tree (1 Feature + 8 PBIs: Scaffolding, 5 CRUD, Event Ingestion, Backoffice Developers page — all titled with [ProjectTemplates] prefix), and wait for 'yes / no / edit' before touching Azure DevOps.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "create backlog for the Resources API. Entities: Resources and Slot. Features: Resource Management, Slot Management. Context: scheduling service for project resources and available slots. Link to existing EPIC #42. New API.",
+      "expected_output": "The skill should render a 13-item preview tree (2 Features, 3 API-level PBIs under first Feature, 5 CRUD per entity) with EPIC [EXISTING #42]. All PBI titles prefixed with [Resources]. After 'yes', create items top-down: Features → Scaffolding → CRUD entity 1 → CRUD entity 2 → Event Ingestion → Backoffice, with correct parent links. Output summary lists all IDs.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "create backlog for the Notifications API. Entity: Notification, Feature: Notification Management, context: sends and tracks project notifications to managers. Skip EPIC. The API repository already exists.",
+      "expected_output": "Since the API already exists, the skill must render a 6-item preview tree (1 Feature + 5 CRUD + Event Ingestion). Scaffolding and Backoffice Developers page must NOT appear. All PBI titles prefixed with [Notifications]. After 'yes', create items without Scaffolding or Backoffice PBIs.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "genera el backlog para la API de Customers. Entidad: Customer. Feature: Customer Records. Contexto: gestión de clientes. EPIC nuevo.",
+      "expected_output": "Work item titles and descriptions must be written in English regardless of Spanish input. The skill should propose an EPIC title, render the preview tree, and wait for approval before creating anything.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "create backlog for the Repository API. Entity: Event, API: RepositoryManagement, context: manages repositories.",
+      "expected_output": "The skill should detect a naming coherence issue ('Event' misaligned with 'RepositoryManagement' domain) and present a naming suggestion before proceeding. It must wait for user confirmation before building the item tree.",
+      "files": []
+    }
+  ]
+}
