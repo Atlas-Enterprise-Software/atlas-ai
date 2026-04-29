@@ -15,7 +15,7 @@ steps:
   - script: |
       git config user.email "melis@atlassoftware.es"
       git config user.name "Alejandro Melis"
-      git push https://x-access-token:$(GITHUB_PAT)@github.com/Atlas-Enterprise-Software/atlas-ai.git HEAD:main --force
+      git push https://x-access-token:$(GITHUB_AI_PAT)@github.com/Atlas-Enterprise-Software/atlas-ai.git HEAD:main --force
     displayName: 'Mirror to GitHub: Atlas-Enterprise-Software/atlas-ai'
     env:
-      GITHUB_PAT: $(GITHUB_PAT)
+      GITHUB_AI_PAT: $(GITHUB_AI_PAT)
