@@ -9,7 +9,7 @@
     {
       "name": "atlas-ai-plugins",
       "description": "Skills, agents, and hooks for the Atlas Development team",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./plugins/atlas-ai-plugins",
       "author": {
         "name": "Atlas Development",
