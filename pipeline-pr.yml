@@ -98,4 +98,4 @@ steps:
       echo ""
       [ $ERRORS -gt 0 ] && echo "FAILED: $ERRORS error(s)" && exit 1
       echo "All checks passed"
-    displayName: 'Validate marketplace versions'
+    displayName: 'Validate files versions'
