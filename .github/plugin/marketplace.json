@@ -1,0 +1,30 @@
+{
+  "name": "atlas-ai-marketplace",
+  "owner": {
+    "name": "Atlas Development",
+    "email": "rafael@atlassoftware.es"
+  },
+  "metadata": {
+    "description": "Copilot CLI plugins for the Atlas Development team",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "atlas-ai-plugins",
+      "description": "AI assistant plugin for the Atlas Development team. Bundles skills, agents, and hooks for Atlas repositories.",
+      "version": "1.0.0",
+      "source": "./plugins/atlas-ai-plugins",
+      "author": {
+        "name": "Atlas Development"
+      },
+      "keywords": [
+        "azure-devops",
+        "pull-request",
+        "atlas",
+        "work-items",
+        "workflow"
+      ],
+      "category": "workflow"
+    }
+  ]
+}
