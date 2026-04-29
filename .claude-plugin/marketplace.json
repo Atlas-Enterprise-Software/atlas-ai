@@ -1,0 +1,20 @@
+{
+  "name": "atlas-ai-marketplace",
+  "description": "Plugin marketplace for Claude Code — Atlas Development team",
+  "owner": {
+    "name": "Atlas Development",
+    "email": "rafael@atlassoftware.es"
+  },
+  "plugins": [
+    {
+      "name": "atlas-ai-plugins",
+      "description": "Skills, agents, and hooks for the Atlas Development team",
+      "version": "1.0.0",
+      "source": "./plugins/atlas-ai-plugins",
+      "author": {
+        "name": "Atlas Development",
+        "email": "rafael@atlassoftware.es"
+      }
+    }
+  ]
+}
