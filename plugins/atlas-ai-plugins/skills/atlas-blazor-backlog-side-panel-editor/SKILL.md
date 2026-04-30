@@ -1,7 +1,7 @@
 ---
 name: atlas-blazor-backlog-side-panel-editor
 description: "Generate an Azure DevOps backlog for adding create/edit/delete functionality in a lateral side panel to a Blazor module. Use this skill whenever the user wants a side panel editor, an edit drawer, create/edit forms in a panel — phrases like 'add a side panel editor for X', 'create an edit panel for Y', 'add create and edit to the Z grid', 'panel lateral de edición para W'."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-blazor-side-panel-editor
@@ -178,9 +178,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<description from template>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 Link child → parent:
 
@@ -305,7 +308,10 @@ Log or display a console message. Do **not** call any service yet.
 ### Localization
 Add create/edit titles and field labels to `Resources/{EntityName}Editor.resx`.
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Component renders in both create mode (Model = null) and edit mode (Model = some value)
 - [ ] Save button is disabled until the form is valid and has unsaved changes
 - [ ] OnCancel fires correctly
@@ -379,7 +385,10 @@ private async Task OnConfirmCreate({EntityName}Model model) { /* TODO: call serv
 private async Task OnConfirmEdit({EntityName}Model model) { /* TODO: call service */ OnCloseEditorPanel(); }
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Clicking "New" opens the side panel in create mode
 - [ ] Clicking "Edit" on a row opens the side panel in edit mode with the row's data pre-filled
 - [ ] Clicking "Discard" or the close button closes the panel
@@ -404,7 +413,10 @@ This PBI belongs to the **backend / BFF team**. The editor uses mock submit unti
 - *(If delete requested)* `DELETE /api/{resource}/{id}` → Delete; returns `204 No Content`
 - Update BFF client NuGet package with new methods
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] All endpoints return correct status codes (`201`, `200`, `204`, `404` as applicable)
 - [ ] BFF client NuGet package is updated and published
 - [ ] Swagger/OpenAPI documents all new endpoints
@@ -435,7 +447,10 @@ Task<{EntityName}Model> Get{EntityName}ById(string id);
 ### Implementation (`Services/Impl/{EntityName}Service.cs`)
 Map form models to BFF request DTOs, call BFF client, map response to `{EntityName}Model`.
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] All new methods are defined on the interface and implemented in the service
 - [ ] Form models have `[Required]` and other data annotation validators matching the BFF validation rules
 - [ ] Mapping from form model → BFF request → `{EntityName}Model` is correct
@@ -457,7 +472,10 @@ Replace the mock `OnSubmit` in `{EntityName}Editor` with real service calls via 
 - On success: show a success notification via the cascaded `INotificationHubCallbacks` or a `TelerikNotification`
 - On failure: catch exception, show error notification, keep panel open
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Creating a new entity persists it and refreshes the grid
 - [ ] Editing an entity updates it and refreshes the grid
 - [ ] Success notification is shown after create/edit
@@ -505,7 +523,10 @@ Add a delete action to the `{EntityName}` grid with a confirmation modal before 
 ### Localization
 Add `Delete{EntityName}Title`, `Delete{EntityName}Message` keys to `Resources/{EntityName}View.resx`.
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Clicking "Delete" on a row opens the confirmation modal with the entity name in the subtitle
 - [ ] Confirming deletes the entity, removes it from the grid, and shows a success notification
 - [ ] Cancelling closes the modal without deleting
