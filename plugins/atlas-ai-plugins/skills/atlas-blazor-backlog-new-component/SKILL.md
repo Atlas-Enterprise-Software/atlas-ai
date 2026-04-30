@@ -179,9 +179,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<description from template>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 Link child → parent:
 
@@ -269,7 +272,10 @@ Create the reusable `{ComponentName}` Blazor component in the `{ModuleName}` mod
 - Add any display strings to `Resources/{ComponentName}.resx` (and `.es.resx`)
 - Inject `IStringLocalizer<{ComponentName}>` in the code-behind
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Component renders correctly when used in `{ConsumingPage}`
 - [ ] All `[Parameter]` inputs control the rendered output
 - [ ] All `EventCallback` outputs fire at the right times
@@ -290,7 +296,10 @@ Add `{ComponentName}` to `{ConsumingPage}`.
 - Pass correct values for all required parameters
 - Wire `EventCallback` outputs to handler methods in `{ConsumingPage}.razor.cs`
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `{ComponentName}` renders in `{ConsumingPage}` with real parameter values
 - [ ] All event callbacks are handled correctly
 - [ ] No compiler errors or warnings introduced
@@ -310,7 +319,10 @@ Create the `{ComponentName}` Blazor component displaying mock data while the BFF
 - In `OnInitializedAsync`, populate `_data` with a hardcoded mock `List<{DataModel}>` (3–5 items)
 - Render the mock data in the component template
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Component renders with mock data
 - [ ] Loading state is displayed while `_loading = true`
 - [ ] Component compiles with zero errors and zero warnings
@@ -332,7 +344,10 @@ This PBI belongs to the **backend / BFF team**. `{ComponentName}` uses mock data
 - Implement `GET /api/{resource}` (or appropriate endpoint) returning `{ComponentName}DataResponse`
 - Update BFF client NuGet package with the new method
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Endpoint returns `200 OK` with the expected JSON structure
 - [ ] BFF client NuGet package is updated and published
 - [ ] Swagger/OpenAPI documents the endpoint
@@ -368,7 +383,10 @@ public class {ComponentName}DataService(I{Resource}BffClient bffClient) : I{Comp
 }
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Interface and implementation exist in the correct folders
 - [ ] Mapping from BFF response to `{DataModel}` is correct
 - [ ] Service compiles with zero errors
@@ -389,7 +407,10 @@ Register `I{ComponentName}DataService` in the DI container.
   ```
 - In `{AppNamespace}.App/Extensions/ServiceCollectionExtensions.cs`, register the BFF client
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `I{ComponentName}DataService` resolves from the DI container
 - [ ] `IoCTest` passes with the new registration
 ```
@@ -411,7 +432,10 @@ Replace mock data in `{ComponentName}` with a real call to `I{ComponentName}Data
 - Handle exceptions: show an error state if the call fails
 - Remove mock data and any `TODO` comments
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Component displays real data from the BFF
 - [ ] Error state is displayed if the service call fails
 - [ ] No hardcoded mock data remains

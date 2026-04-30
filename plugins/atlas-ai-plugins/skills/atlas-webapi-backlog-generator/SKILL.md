@@ -300,9 +300,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<rich description from template>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 ### Link child → parent
 
@@ -388,6 +391,8 @@ Omit `epic:` if no EPIC was created or linked.
 
 Use these templates verbatim, substituting `{ApiName}` and `{EntityName}`. Embed inferred validation rules from Step 1b into the Create and Update templates.
 
+For each PBI: pass the **`description` field** content (Goal + Tasks) as the `description` parameter and the **`acceptance_criteria` field** content as the `acceptance_criteria` parameter (`Microsoft.VSTS.Common.AcceptanceCriteria`) when calling `wit_create_work_item`.
+
 ---
 
 ### Scaffolding PBI
@@ -429,7 +434,10 @@ This generates:
 ### Docker
 - Verify multi-stage `Dockerfile` in `WebApi/`: base image `mcr.microsoft.com/dotnet/aspnet:10.0`, `FEED_ACCESSTOKEN` build arg, non-root user (`$APP_UID`), ports `8080`/`8081`
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `dotnet new cb-api` completes without errors and generates all expected projects
 - [ ] `dotnet build --configuration Release` succeeds with zero errors and zero warnings
 - [ ] `IoCTest` resolves all DI registrations without throwing
@@ -459,7 +467,10 @@ Implement `GET /` — returns all {EntityName}s from Cosmos DB.
 | `{ApiName}.Infrastructure` | Implement `{EntityName}CosmosRepository.GetAllAsync` using `GetItemLinqQueryable<{EntityName}>()` |
 | `{ApiName}.WebApi` | Add `GET /` endpoint in `{EntityName}Endpoints.cs` (route group `/{entity-plural-kebab}`) → `200 OK` with `IEnumerable<{EntityName}Response>` |
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `GET /{entity-plural-kebab}` returns `200 OK` with a JSON array
 - [ ] Returns empty array (not `404`) when the Cosmos DB container has no items
 - [ ] `Application.UnitTest` covers `GetAllAsync` with a mocked repository
@@ -485,7 +496,10 @@ Implement `GET /{id}` — returns a single {EntityName} by its Cosmos DB documen
 | `{ApiName}.Infrastructure` | Implement using `ReadItemAsync<{EntityName}>(id, partitionKey)`; return null on `CosmosException` with status 404 |
 | `{ApiName}.WebApi` | Add `GET /{id}` endpoint → `200 OK` or `404 Not Found` (via `StatusCodeMapper` mapping `EntityNotFoundException → 404`) |
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `GET /{entity-plural-kebab}/{id}` returns `200 OK` with the correct JSON object when the item exists
 - [ ] Returns `404 Not Found` when the ID does not exist in Cosmos DB
 - [ ] `Application.UnitTest` covers both the found and not-found code paths
@@ -514,7 +528,10 @@ Implement `POST /` — creates a new {EntityName} in Cosmos DB and publishes a `
 
 [SKILL: Replace this block with the FluentValidation rules inferred in Step 1b, formatted as a bullet list per property. Remove this section entirely if no validators were derived from the API context.]
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Valid payload → `201 Created` with the new item and a `Location` header pointing to `GET /{id}`
 - [ ] Invalid payload → `400 Bad Request` with structured FluentValidation error messages
 - [ ] Duplicate ID → `409 Conflict`
@@ -545,7 +562,10 @@ Implement `PUT /{id}` — upserts a {EntityName} in Cosmos DB and publishes a `{
 
 [SKILL: Replace this block with the FluentValidation rules inferred in Step 1b, formatted as a bullet list per property. Remove this section entirely if no validators were derived from the API context.]
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Valid payload → `200 OK` with updated fields
 - [ ] Returns `404 Not Found` when the ID does not exist
 - [ ] Invalid payload → `400 Bad Request`
@@ -573,7 +593,10 @@ Implement `DELETE /{id}` — removes a {EntityName} from Cosmos DB and publishes
 | `{ApiName}.Infrastructure` | Implement using `DeleteItemAsync<{EntityName}>(id, partitionKey)`; map `CosmosException` with status 404 to `EntityNotFoundException` |
 | `{ApiName}.WebApi` | Add `DELETE /{id}` endpoint → `204 No Content` on success; `404 Not Found` if entity does not exist |
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `DELETE /{entity-plural-kebab}/{id}` returns `204 No Content` on success
 - [ ] Returns `404 Not Found` when the ID does not exist
 - [ ] The item is no longer retrievable via `GET /{id}` after deletion
@@ -621,7 +644,10 @@ Add one entry per entity in each stack file:
   topicName: {EntityName}Events
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `{EntityName}Events` function exists in `{EntityName}Functions.cs`
 - [ ] `{EntityName}EventsTableName` constant added to `TableNames.cs`
 - [ ] `CreateTable` call added to `Resources/Program.cs`
@@ -673,7 +699,10 @@ Add the configuration selector in the chain:
 .Select($"{{{ApiName}Client.SectionName}}:{KeyFilter.Any}")
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `{ApiName}.Client` NuGet package referenced in `Directory.Packages.props` and `.csproj`
 - [ ] `@using {ApiName}.Client` added to `Developers.razor`
 - [ ] Tab entry added and appears on the Developers page sorted alphabetically

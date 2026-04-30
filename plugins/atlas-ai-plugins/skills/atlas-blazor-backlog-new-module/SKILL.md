@@ -158,9 +158,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<description from template>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 Link child → parent:
 
@@ -259,7 +262,10 @@ src/{AppNamespace}.{ModuleName}/
 ### `_Imports.razor`
 Add standard `@using` directives matching the pattern of existing modules (e.g. `{AppNamespace}.Resources/_Imports.razor`).
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Project exists in the solution and builds successfully
 - [ ] Folder structure matches the standard module layout
 - [ ] `_Imports.razor` has the required `@using` directives
@@ -286,7 +292,10 @@ Add the required `using` directive at the top of the file:
 using {AppNamespace}.{ModuleName};
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] The `{AppNamespace}.{ModuleName}` assembly appears in `AdditionalAssemblies`
 - [ ] Routes defined with `@page` in `{AppNamespace}.{ModuleName}` are resolved by the Blazor router
 - [ ] Application builds and starts without errors
@@ -320,7 +329,10 @@ In `src/{AppNamespace}.App/Extensions/ServiceCollectionExtensions.cs`, add the c
 .Add{ModuleName}Module()
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `Add{ModuleName}Module()` extension method exists and compiles
 - [ ] It is called from the WebApp's main DI registration method
 - [ ] `IoCTest` passes after the registration is added
@@ -341,7 +353,10 @@ Create the main entry view for the `{ModuleName}` module.
 - `Resources/{ModuleName}View.resx` (and `.es.resx`) with a `Title` key
 - Render the localized title; body can be a placeholder for now
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Navigating to `/{module-kebab}` renders `{ModuleName}View` inside `MainLayout`
 - [ ] Page title is displayed using the localized `Title` key
 - [ ] Component compiles with zero errors and zero warnings
@@ -363,7 +378,10 @@ Add a navigation entry for `{ModuleName}` to the application sidebar.
   - Icon: choose a relevant Font Awesome icon class
 - Register the entry in `SidebarService` or the sidebar configuration
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Entry appears in the sidebar
 - [ ] Clicking the entry navigates to `/{module-kebab}`
 - [ ] Active state is highlighted when on any route under `/{module-kebab}`

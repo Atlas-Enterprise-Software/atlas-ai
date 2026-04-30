@@ -163,9 +163,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<description>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 Link child → parent after each creation:
 
@@ -249,7 +252,10 @@ Create the `{PageName}` Blazor page component in the `{ModuleName}` module.
 - Add `Resources/{PageName}.resx` (and `{PageName}.es.resx`) with at minimum a `Title` key
 - Follow the module's existing component structure
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Navigating to `{route}` renders `{PageName}` inside `MainLayout`
 - [ ] Page title is displayed using the localized `Title` key
 - [ ] Component compiles with zero errors and zero warnings
@@ -271,7 +277,10 @@ Add a sidebar navigation entry for `{PageName}` so users can reach it from the m
   - Icon: choose a relevant Font Awesome icon class
 - Register the entry in `SidebarService` or the sidebar configuration of `{ModuleName}`
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Entry appears in the sidebar when the user has access to `{ModuleName}`
 - [ ] Clicking the entry navigates to `{route}`
 - [ ] Active state is highlighted when on `{route}`
@@ -291,7 +300,10 @@ Define and apply an authorization policy that restricts access to `{PageName}`.
 - Register the policy in the authorization configuration (`AuthorizationOptions`)
 - Apply `[Authorize(Policy = "{ModuleName}.{PageName}")]` to `{PageName}.razor` or its code-behind
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Unauthenticated users are redirected to the login page
 - [ ] Unauthorized users see the "not authorized" view (not a blank page or error)
 - [ ] Policy is covered by `IoCTest`

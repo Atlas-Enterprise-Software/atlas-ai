@@ -162,9 +162,12 @@ mcp__azure-devops__wit_create_work_item(
   project: "{Project}",
   type: "Epic" | "Feature" | "Product Backlog Item",
   title: "<title>",
-  description: "<description from template>",
+  description: "<description content from template — Goal and Tasks sections only>",
+  acceptance_criteria: "<acceptance criteria from template — only for Product Backlog Items; omit for Epic and Feature>",
 )
 ```
+
+> `acceptance_criteria` maps to the `Microsoft.VSTS.Common.AcceptanceCriteria` field in the Azure DevOps Scrum process template.
 
 Link child → parent:
 
@@ -265,7 +268,10 @@ Create the `{EntityName}View` Blazor page in `{ModuleName}` displaying a `Teleri
 ### Mock data
 Populate `_data` in `OnInitializedAsync` with a hardcoded `List<{EntityName}Model>` (3–5 items).
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Page renders at `{route}` with mock data in the grid
 - [ ] Loading, no-results, and error states are displayed correctly
 - [ ] All column headers are localized
@@ -296,7 +302,10 @@ Create a `{EntityName}FilterModel` in `Models/` to hold the current filter state
 - Add `<GridColumnsVisibility>` component to the grid toolbar
 - Define a `{EntityName}ColumnsVisibilityModel` to persist visibility state per column
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Each column with a filter shows the correct filter control in the header menu
 - [ ] Filters narrow the grid results correctly with mock data
 - [ ] Column visibility toggle shows/hides columns without breaking the grid
@@ -320,7 +329,10 @@ This PBI belongs to the **backend / BFF team**. The UI grid uses mock data until
 - Expose the endpoint via the BFF client NuGet package (`I{EntityName}sBffClient`)
 - Document query parameters if filtering is server-side
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `GET /api/{resource}` returns `200 OK` with a JSON array
 - [ ] Returns empty array (not `404`) when there are no items
 - [ ] BFF client NuGet package is updated and published
@@ -361,7 +373,10 @@ public class {EntityName}Service(I{EntityName}sBffClient bffClient) : I{EntityNa
 
 - Add `To{EntityName}Model()` mapping extension in `Models/{EntityName}ModelExtensions.cs`
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `I{EntityName}Service` interface exists in `Services/Contracts/`
 - [ ] `{EntityName}Service` implementation exists in `Services/Impl/`
 - [ ] Mapping from BFF response to `{EntityName}Model` is correct
@@ -390,7 +405,10 @@ In `{AppNamespace}.App/Extensions/ServiceCollectionExtensions.cs`, add the BFF c
 .AddI{EntityName}sBffClient()
 ```
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] `I{EntityName}Service` resolves from the DI container
 - [ ] `IoCTest` passes with the new registration
 - [ ] BFF client is registered with the correct HTTP message handlers (audit, JWT, culture)
@@ -413,7 +431,10 @@ Replace the mock data in `{EntityName}View` with a real call to `I{EntityName}Se
 - Handle exceptions: catch and set `_loadError = true` to show `<GridLoadError>`
 - Remove mock data and any `TODO` comments
 
-## Acceptance Criteria
+```
+
+**`acceptance_criteria` field:**
+```markdown
 - [ ] Grid displays real data from the BFF
 - [ ] Error state is shown if the BFF call fails
 - [ ] No hardcoded mock data remains in the component
