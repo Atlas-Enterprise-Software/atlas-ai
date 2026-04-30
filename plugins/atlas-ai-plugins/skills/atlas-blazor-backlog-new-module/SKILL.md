@@ -1,7 +1,7 @@
 ---
 name: atlas-blazor-backlog-new-module
 description: "Generate an Azure DevOps backlog for creating a completely new feature module in a Blazor application. Use this skill whenever the user wants to create a new module, scaffold a new section, or start a new feature area from scratch — phrases like 'create a new module for X', 'scaffold the Y module', 'start the Z section from scratch', 'nuevo módulo para W'. After scaffolding, use atlas-blazor-backlog-grid-page or atlas-blazor-backlog-side-panel-editor to add feature PBIs."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-blazor-new-module

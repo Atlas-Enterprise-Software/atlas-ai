@@ -1,7 +1,7 @@
 {
   "name": "atlas-ai-plugins",
   "description": "AI assistant plugin for the Atlas Development team. Bundles skills, agents, and hooks that standardize workflows across Atlas repositories.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Atlas Development",
     "email": "rafael@atlassoftware.es"

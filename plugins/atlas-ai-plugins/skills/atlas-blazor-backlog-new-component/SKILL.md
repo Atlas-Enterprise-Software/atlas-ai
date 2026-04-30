@@ -1,7 +1,7 @@
 ---
 name: atlas-blazor-backlog-new-component
 description: "Generate an Azure DevOps backlog for adding a new reusable Blazor component (not a full page) to a Blazor application. Use this skill whenever the user wants a new component, shared widget, or UI building block — phrases like 'create a component for X', 'add a shared Y component', 'build a Z widget', 'nuevo componente para W'. Adjusts PBI count based on whether backend data is required."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-blazor-new-component

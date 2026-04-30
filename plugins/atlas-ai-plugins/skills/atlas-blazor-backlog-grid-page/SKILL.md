@@ -1,7 +1,7 @@
 ---
 name: atlas-blazor-backlog-grid-page
 description: "Generate an Azure DevOps backlog for adding a data grid listing page to a Blazor module. Use this skill whenever the user wants to add a grid, list, or table page — phrases like 'add a grid for X', 'create a list page for Y', 'show TelerikGrid with Z data', 'listing screen for W'. Always generates the full mock-data → BFF endpoint → real integration flow."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-blazor-grid-page

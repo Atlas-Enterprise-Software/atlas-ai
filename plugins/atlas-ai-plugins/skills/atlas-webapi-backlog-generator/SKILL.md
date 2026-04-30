@@ -1,7 +1,7 @@
 ---
 name: atlas-webapi-backlog-generator
 description: "Generate a full Azure DevOps backlog for a new .NET Web API following Atlas Clean Architecture. Use this skill whenever the user wants to create backlog items, generate PBIs, scaffold work items, or says 'crea el backlog para la API de X', 'genera los work items para Y', 'prepara las tareas de desarrollo para Z', 'create backlog for the X entity', or asks to plan the development of a new .NET service. Also trigger when the user describes a new API to build and their next logical step is creating work items."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-webapi-backlog-generator
