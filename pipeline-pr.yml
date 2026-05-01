@@ -1,0 +1,101 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: |
+      set -e
+      ERRORS=0
+
+      semver_gt() {
+        IFS=. read -r v1a v1b v1c <<< "$1"
+        IFS=. read -r v2a v2b v2c <<< "$2"
+        [[ $v1a -gt $v2a ]] && return 0
+        [[ $v1a -lt $v2a ]] && return 1
+        [[ $v1b -gt $v2b ]] && return 0
+        [[ $v1b -lt $v2b ]] && return 1
+        [[ $v1c -gt $v2c ]] && return 0
+        return 1
+      }
+
+      echo "=== 1. JSON validation ==="
+      for f in \
+        ".github/plugin/marketplace.json" \
+        ".claude-plugin/marketplace.json" \
+        "plugins/atlas-ai-plugins/plugin.json" \
+        "plugins/atlas-ai-plugins/.claude-plugin/plugin.json"; do
+        if ! jq empty "$f" 2>/dev/null; then
+          echo "ERROR: JSON inválido en $f"
+          ERRORS=$((ERRORS+1))
+        fi
+      done
+
+      echo "=== 2. Extract versions ==="
+      PLUGIN_VER=$(jq -r '.version' plugins/atlas-ai-plugins/plugin.json)
+      CLAUDE_PLUGIN_VER=$(jq -r '.version' plugins/atlas-ai-plugins/.claude-plugin/plugin.json)
+      MKT_PLUGIN_VER=$(jq -r '.plugins[0].version' .github/plugin/marketplace.json)
+      CLAUDE_MKT_VER=$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)
+
+      echo "=== 3. Semver format ==="
+      for v in "$PLUGIN_VER" "$CLAUDE_PLUGIN_VER" "$MKT_PLUGIN_VER" "$CLAUDE_MKT_VER"; do
+        if ! echo "$v" | grep -qE '^\d+\.\d+\.\d+$'; then
+          echo "ERROR: Formato semver inválido: $v"
+          ERRORS=$((ERRORS+1))
+        fi
+      done
+
+      echo "=== 4. Version consistency ==="
+      for v in "$CLAUDE_PLUGIN_VER" "$MKT_PLUGIN_VER" "$CLAUDE_MKT_VER"; do
+        if [ "$v" != "$PLUGIN_VER" ]; then
+          echo "ERROR: Versión inconsistente — plugin.json=$PLUGIN_VER pero otro fichero=$v"
+          ERRORS=$((ERRORS+1))
+        fi
+      done
+
+      echo "=== 5. Plugin version bump ==="
+      CHANGED=$(git diff origin/main...HEAD --name-only)
+      PLUGIN_CHANGED=false
+      for f in $CHANGED; do
+        echo "$f" | grep -qE '^plugins/' && PLUGIN_CHANGED=true && break
+      done
+
+      if [ "$PLUGIN_CHANGED" = true ]; then
+        MAIN_VER=$(git show origin/main:plugins/atlas-ai-plugins/plugin.json | jq -r '.version')
+        if ! semver_gt "$PLUGIN_VER" "$MAIN_VER"; then
+          echo "ERROR: Contenido de plugins/ modificado pero versión no bumpeada. PR=$PLUGIN_VER, main=$MAIN_VER"
+          ERRORS=$((ERRORS+1))
+        else
+          echo "OK: Plugin $MAIN_VER → $PLUGIN_VER"
+        fi
+      fi
+
+      echo "=== 6. Skill version bump ==="
+      for f in $CHANGED; do
+        echo "$f" | grep -qE '^plugins/.*/skills/.*/SKILL\.md$' || continue
+        SKILL_VER=$(grep -m1 '^version:' "$f" | sed 's/version:[[:space:]]*//')
+        if git show "origin/main:$f" &>/dev/null; then
+          MAIN_SKILL_VER=$(git show "origin/main:$f" | grep -m1 '^version:' | sed 's/version:[[:space:]]*//')
+          if ! semver_gt "$SKILL_VER" "$MAIN_SKILL_VER"; then
+            echo "ERROR: $f modificado pero versión no bumpeada. PR=$SKILL_VER, main=$MAIN_SKILL_VER"
+            ERRORS=$((ERRORS+1))
+          else
+            echo "OK: $f $MAIN_SKILL_VER → $SKILL_VER"
+          fi
+        else
+          echo "OK: $f es una skill nueva"
+        fi
+      done
+
+      echo ""
+      [ $ERRORS -gt 0 ] && echo "FAILED: $ERRORS error(s)" && exit 1
+      echo "All checks passed"
+    displayName: 'Validate files versions'
