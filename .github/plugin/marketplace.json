@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Copilot CLI plugins for the Atlas Development team",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "plugins": [
     {
       "name": "atlas-ai-plugins",
       "description": "AI assistant plugin for the Atlas Development team. Bundles skills, agents, and hooks for Atlas repositories.",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "source": "./plugins/atlas-ai-plugins",
       "author": {
         "name": "Atlas Development"
