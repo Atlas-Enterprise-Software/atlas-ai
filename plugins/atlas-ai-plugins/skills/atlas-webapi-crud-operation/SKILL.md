@@ -17,12 +17,13 @@ Act without asking:
 - Infer the entity name from the PBI, the repository name, or the existing codebase
 - Explore the target repository to understand what already exists before generating anything
 - Write all code and identifiers in **English**, regardless of the language the user writes in
-- Detect which Azure DevOps MCP servers are configured by scanning the tool list for prefixes of the form `mcp__<server>__wit_*`. Each MCP server is bound to **one** Azure DevOps organization at startup, and that organization cannot be changed per call. When more than one such MCP is configured, they target **different** organizations — they are **not** redundant and one is never a fallback of the other. If exactly one is configured, use it directly; if more than one, always ask the user to pick (Step 1). Then use the same prefix for every Azure DevOps call afterwards.
+- All Azure DevOps operations go through the Azure CLI (`az boards`, `az repos`, `az devops`, and `az rest` for endpoints the CLI does not cover directly). Pass `--organization https://dev.azure.com/<org>` on every call. The `<org>` value is resolved in Step 1 from the user's input — never from a "default" configured elsewhere — so the target organization is always explicit and unambiguous.
 
 Stop and ask only if:
 - No PBI ID has been provided — ask for it
-- More than one Azure DevOps MCP server is configured — always list them with their organizations and ask the user which one to use (Step 1)
-- The project within the chosen organization is not known and cannot be inferred from the PBI's area path — ask (Step 1)
+- The Azure DevOps organization (URL or name) is not provided by the user and cannot be inferred — ask (Step 1)
+- The project within the chosen organization is not known and cannot be inferred from the PBI's `System.AreaPath` — ask (Step 1)
+- `az` is not authenticated against the target organization — stop and ask the user to run `az login` and `az devops login`
 - The entity name or operation type cannot be inferred unambiguously from the PBI — ask
 - The target repository is not clear — ask
 - Any breaking ambiguity about validations — ask as part of Step 3 confirmation
@@ -34,75 +35,76 @@ Never ask about things you can discover by reading the PBI or exploring the repo
 
 ---
 
-## Step 1 — Collect inputs and pick the right Azure DevOps MCP
+## Step 1 — Collect inputs and set the Azure DevOps target
 
-You need three things: the **PBI ID**, the **Azure DevOps organization** (which determines which MCP server to call), and the **project** within that organization.
+You need three things: the **PBI ID**, the **organization URL** (passed to every `az` call via `--organization`), and the **project** within that organization.
 
 ### 1a. PBI ID
 
 If the user did not give a numeric PBI ID, ask for it.
 
-### 1b. Identify available Azure DevOps MCP servers
+### 1b. Organization URL
 
-Scan your tool list for any tool whose name matches `mcp__<server>__wit_get_work_item`. Each match represents one MCP server bound to one Azure DevOps organization. Server names are user-defined and arbitrary — do not assume any particular naming; work with whatever is configured.
+Resolve the org URL using this priority — stop at the first rule that applies:
 
-### 1c. Resolve the MCP (and therefore the organization)
+1. **The user gave the organization name or URL** in their message. Normalise to `https://dev.azure.com/<org>` and use it.
+2. **Otherwise**, ask:
 
-- **If only one Azure DevOps MCP server is configured**, use it without asking.
+   > "Which Azure DevOps organization is the PBI in? Provide either the name (e.g. `MyOrg`) or the full URL (e.g. `https://dev.azure.com/MyOrg`)."
 
-- **If more than one is configured**, list them and ask the user to pick. Do not try to guess from the message, do not probe with the PBI ID, do not match by substring — just show the list and wait for the answer. The list must look like:
+Then verify `az` is authenticated against that org by listing its projects:
 
-  ```
-  Several Azure DevOps MCP servers are configured. Which one should I use for this PBI?
-
-    1. <server-name-1>   (org: <Organization 1>)
-    2. <server-name-2>   (org: <Organization 2>)
-    ...
-  ```
-
-  To resolve each server's organization, call `core_list_projects` on every configured MCP in parallel — each call returns the projects of its own org, and the org name appears in the response. Use that to label the list.
-
-  Wait for the user's pick (by number, server name, or org name) before continuing.
-
-Once chosen, **remember the MCP prefix** (e.g. `mcp__<ado>__`). Every Azure DevOps call later in this skill must use that same prefix. The placeholder `mcp__<ado>__` in the snippets below stands for the chosen prefix — do not leave the placeholder literal in tool calls.
-
-### 1d. Resolve the project
-
-If the project is not given by the user and cannot be inferred from the PBI's area path (`System.AreaPath` field), list the projects in the chosen organization and ask:
-
-```
-mcp__<ado>__core_list_projects
+```bash
+az devops project list \
+  --organization <org-url> \
+  --query 'value[].name' \
+  -o tsv
 ```
 
-Present projects as a numbered list. Collect all missing inputs in **one message** — never one question per turn.
+If this call fails with an authentication error, stop and tell the user to run `az login` and `az devops login` (or refresh their PAT) before continuing.
+
+Remember `<org-url>` — every `az` command later in this skill must include `--organization <org-url>`. The placeholder in the snippets below stands for that exact value; do not leave it literal in commands.
+
+### 1c. Project
+
+If the user did not give the project name and it cannot be inferred from the PBI's `System.AreaPath` (read in Step 2), present the projects returned by the `az devops project list` call above as a numbered list and ask the user to pick.
+
+Collect any missing inputs in **one message** — never one question per turn.
 
 ---
 
 ## Step 2 — Fetch and analyze the PBI, Feature and Epic
 
-Fetch the PBI with its relations so you can walk up the hierarchy:
+Fetch the PBI **with all fields and relations** so you can read the Acceptance Criteria and walk up the hierarchy:
 
-```
-mcp__<ado>__wit_get_work_item(id: <PBI_ID>)
-```
-
-Also fetch the **Acceptance Criteria** field:
-
-```
-mcp__<ado>__wit_get_work_item(id: <PBI_ID>, fields: ["Microsoft.VSTS.Common.AcceptanceCriteria"])
+```bash
+az boards work-item show \
+  --id <PBI_ID> \
+  --organization <org-url> \
+  --expand all \
+  --output json
 ```
 
-Then find the parent **Feature** from the PBI's relations (link type `System.LinkTypes.Hierarchy-Reverse`) and fetch it:
+`--expand all` returns the full `fields` map (including `Microsoft.VSTS.Common.AcceptanceCriteria` and `System.AreaPath`) and the `relations` array. If the installed `az` build does not accept `--expand all` on this command, fall back to `az rest`:
 
-```
-mcp__<ado>__wit_get_work_item(id: <FEATURE_ID>)
+```bash
+az rest \
+  --method get \
+  --uri "<org-url>/_apis/wit/workitems/<PBI_ID>?\$expand=all&api-version=7.1" \
+  --output json
 ```
 
-Then find the parent **Epic** from the Feature's relations the same way and fetch it:
+Then find the parent **Feature** from the PBI's relations — any entry whose `rel` field is `System.LinkTypes.Hierarchy-Reverse` is a parent. Extract the work item ID from the `url` (last path segment) and fetch it the same way:
 
+```bash
+az boards work-item show \
+  --id <FEATURE_ID> \
+  --organization <org-url> \
+  --expand all \
+  --output json
 ```
-mcp__<ado>__wit_get_work_item(id: <EPIC_ID>)
-```
+
+Then find the parent **Epic** from the Feature's relations and fetch it the same way.
 
 If the PBI has no parent Feature, or the Feature has no parent Epic, skip that level silently — do not stop or ask.
 
@@ -245,11 +247,15 @@ For each external field the user confirmed should be validated (Step 3), find th
 
 1. **Search the current solution** — look for `<PackageReference Include="Atlas.*.Client"` in the `.csproj` files. If a package for the target entity is already referenced, use that name and version.
 
-2. **Search across repos** — if not found locally, use:
+2. **Search across repos** — if not found locally, call the Azure DevOps Code Search REST API via `az rest`:
+   ```bash
+   az rest \
+     --method post \
+     --uri "https://almsearch.dev.azure.com/<org>/<project>/_apis/search/codesearchresults?api-version=7.1" \
+     --body '{"searchText": "<EntityName>Client", "$top": 25, "filters": {"File": ["*.csproj"]}}' \
+     --output json
    ```
-   mcp__<ado>__search_code(searchText: "<EntityName>Client", filters: { fileExtension: "csproj" })
-   ```
-   Inspect the results to identify the package name (e.g., `Atlas.Patients.Client`) and the version used by other services.
+   Note that the host is `almsearch.dev.azure.com`, not `dev.azure.com` — the search API lives on a different endpoint. Inspect the results to identify the package name (e.g., `Atlas.Patients.Client`) and the version used by other services.
 
 3. **Ask the user** — if the package still cannot be found after both searches, present what you found and ask:
    > "I couldn't find a NuGet package for the `<EntityName>` client in the artifact feed. Do you know the package name, or should I skip this validation?"
@@ -269,7 +275,20 @@ If provisioning files **are found** but there is no Event Grid topic configured 
 
 If no provisioning files are found at all, skip this check silently.
 
-Use `Read` and `Bash` (find/grep) to explore locally. Use `mcp__<ado>__repo_list_directory` or `mcp__<ado>__repo_get_file_content` if the repo is only available remotely.
+Use `Read` and `Bash` (find/grep) to explore locally. If the repo is only available remotely, browse it through the Azure DevOps Git Items REST API via `az rest`:
+
+```bash
+# List directory contents
+az rest \
+  --method get \
+  --uri "<org-url>/<project>/_apis/git/repositories/<repo>/items?scopePath=<path>&recursionLevel=OneLevel&api-version=7.1" \
+  --output json
+
+# Read a file's contents
+az rest \
+  --method get \
+  --uri "<org-url>/<project>/_apis/git/repositories/<repo>/items?path=<path>&\$format=text&api-version=7.1"
+```
 
 ---
 
