@@ -1,6 +1,6 @@
 # Atlas.AI.Marketplace
 
-Plugin marketplace for GitHub Copilot CLI and Claude Code — Atlas Development team.
+Plugin marketplace for GitHub Copilot CLI and Claude Code — [Atlas Development team](https://www.atlassoftware.es/).
 
 ## Dependencies to install
 
@@ -296,3 +296,7 @@ When modifying a specific skill, also bump its own `version` field inside its `S
 4. If a new skill was added, add a row to the **Skills included** table in this README
 5. Commit and push to `main`
 6. Notify the team to run `copilot plugin update atlas-ai-plugins` (Copilot CLI) or `claude plugin update atlas-ai-plugins` (Claude Code)
+
+## About Atlas
+
+[Atlas Enterprise Software](https://www.atlassoftware.es/) is a technology consultancy specializing in Azure, .NET, and applied AI. We build modern cloud architectures and AI-powered tooling for enterprise systems — this marketplace is part of our internal developer platform, released as open source.
