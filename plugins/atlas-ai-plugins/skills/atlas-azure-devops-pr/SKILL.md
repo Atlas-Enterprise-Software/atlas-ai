@@ -1,7 +1,7 @@
 ---
 name: atlas-azure-devops-pr
 description: "Use this skill whenever the user wants to create a PR, open a pull request, review branch differences, or prepare code for review in an Atlas/Azure DevOps repository. Trigger this skill when someone mentions 'PR', 'pull request', 'hacer PR', 'crea una PR', 'subir cambios', 'review my changes', 'merge to main', or asks to link a PBI or work item to their branch. Also trigger when the user finishes implementing a feature or fix and their next logical step is getting it reviewed or merged — even if they don't say 'pull request' explicitly."
-version: 1.1.1
+version: 1.1.2
 ---
 
 # atlas-azure-devops-pr
@@ -109,6 +109,10 @@ Example: `Atlas.MyService: Add user authentication endpoint`
 - Summary
 - What changed
 - Why
+
+**Cross-references in the description** follow Azure DevOps conventions:
+- Reference other **pull requests** with `!<id>` (e.g. `!223`) — never `#<id>`.
+- Reference **work items** (PBI, Bug) with `#<id>` (e.g. `#21960`).
 
 Use `--stat` and `--name-status` output from Step 1. Only read full file diffs if the change is ambiguous and context is essential.
 
