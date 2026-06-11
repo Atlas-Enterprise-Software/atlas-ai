@@ -18,6 +18,12 @@
       "prompt": "necesito hacer una PR para mis cambios, y enlázala al PBI 21960",
       "expected_output": "The skill should create or update the PR (or detect the existing one) and link work item 21960 to it. Return the PR URL with confirmation of the linked work item.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "crea una PR, estoy en main con cambios sin commitear que añaden un endpoint nuevo",
+      "expected_output": "The skill should infer the change type as 'feature' from the diff (new endpoint) without asking the user, create a feature/ branch with a short descriptive name, then continue the normal workflow: commit, push, and create the PR.",
+      "files": []
     }
   ]
 }

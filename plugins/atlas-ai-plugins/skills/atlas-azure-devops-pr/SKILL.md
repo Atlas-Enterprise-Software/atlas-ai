@@ -1,7 +1,7 @@
 ---
 name: atlas-azure-devops-pr
 description: "Use this skill whenever the user wants to create a PR, open a pull request, review branch differences, or prepare code for review in an Atlas/Azure DevOps repository. Trigger this skill when someone mentions 'PR', 'pull request', 'hacer PR', 'crea una PR', 'subir cambios', 'review my changes', 'merge to main', or asks to link a PBI or work item to their branch. Also trigger when the user finishes implementing a feature or fix and their next logical step is getting it reviewed or merged — even if they don't say 'pull request' explicitly."
-version: 1.1.2
+version: 1.2.0
 ---
 
 # atlas-azure-devops-pr
@@ -12,6 +12,7 @@ Standardizes pull request creation for Atlas repositories in Azure DevOps. Prefe
 
 Use it to:
 - summarize branch changes against the target branch
+- infer the change type (feature / bug / fix) from the real diff
 - generate a PR title and Markdown description from the real diff
 - create or update the PR in Azure DevOps
 - link a PBI or work item when the user provides one
@@ -20,7 +21,7 @@ Use it to:
 ## Preconditions
 
 1. The repository remote must point to Azure DevOps.
-2. If on the resolved target branch (see Step 1), ask: **"Is this a feature, bug, or fix?"** Create a branch with the appropriate prefix (`feature/`, `bug/`, `fix/`) and a short descriptive name — never include PBI numbers. Switch to it and continue.
+2. If on the resolved target branch (see Step 1), infer the change type from the actual changes (see *Change-type inference* in Step 1) and create a branch with the matching prefix (`feature/`, `bug/`, `fix/`) and a short descriptive name — never include PBI numbers. Switch to it and continue. Only ask the user when the inference is ambiguous.
 3. Act autonomously for everything else: staging, committing, pushing, creating or updating the PR.
 4. Stop only if: authentication is broken, merge conflicts exist, or a `*Client(s).csproj` **or any of its source files** was modified without a version bump.
 
@@ -69,6 +70,16 @@ git log --oneline --no-merges origin/<target-branch>..HEAD
 git diff --stat origin/<target-branch>...HEAD
 git diff --name-status origin/<target-branch>...HEAD
 ```
+
+#### Change-type inference (feature / bug / fix)
+
+Classify the branch from the evidence — commit messages, `--name-status` output, and the working-tree diff if changes are uncommitted. Do **not** ask the user unless the signals genuinely conflict.
+
+- **feature** — adds new capability: new files with public types, new endpoints or routes, new components, new options or parameters, new behavior described in commits ("add", "añade", "nuevo", "implement").
+- **bug** — corrects defective runtime behavior: linked Bug work item, or commits/diff describe broken behavior being repaired ("fix", "corrige", wrong result, exception, regression).
+- **fix** — small corrections that are not behavioral defects: typos, naming, config, docs, build scripts, formatting, dependency pins.
+
+State the inferred type in one line (e.g. *"Inferred change type: **feature** — new `GetUserById` endpoint"*) and continue. The inferred type drives the branch prefix (Precondition 2). If mixed (e.g. a feature plus an unrelated bugfix), pick the dominant type by diff weight.
 
 ### 2. Commit and push if needed
 
