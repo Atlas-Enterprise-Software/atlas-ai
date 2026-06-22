@@ -1,7 +1,7 @@
 ---
 name: atlas-azure-devops-pr
 description: "Use this skill whenever the user wants to create a PR, open a pull request, review branch differences, or prepare code for review in an Atlas/Azure DevOps repository. Trigger this skill when someone mentions 'PR', 'pull request', 'hacer PR', 'crea una PR', 'subir cambios', 'review my changes', 'merge to main', or asks to link a PBI or work item to their branch. Also trigger when the user finishes implementing a feature or fix and their next logical step is getting it reviewed or merged — even if they don't say 'pull request' explicitly."
-version: 1.2.0
+version: 1.3.0
 ---
 
 # atlas-azure-devops-pr
@@ -41,25 +41,9 @@ Parse the Azure DevOps **project** and **repository** directly from the remote U
 
 #### Target branch resolution
 
-Resolve `<target-branch>` before running any diff commands. Follow this decision tree:
+The target branch is **always `main`** — never ask.
 
-1. **User explicitly names a target branch** → use it directly, no further questions.
-2. **User does not specify a target branch** → ask:
-
-   > "Which branch should this PR target? You can type it directly, or I can look it up from Azure DevOps."
-   > - **1. Type the branch name**
-   > - **2. Look it up from Azure DevOps**
-
-3. **User chooses option 1** → use the provided name, proceed.
-4. **User chooses option 2** →
-   - Call `mcp__azure-devops__repo_get_repo_by_name_or_id` with the repo name parsed from the remote URL.
-   - Extract the `defaultBranch` field (format: `refs/heads/<branch>`); strip the `refs/heads/` prefix.
-   - Show the result and ask for confirmation before continuing:
-
-     > "The default branch in Azure DevOps is `<branch>`. Use this as the PR target?"
-
-   - If confirmed → use that branch, proceed.
-   - If rejected → ask the user to type the desired target branch.
+The only exception: the user explicitly names a different target branch in their request → use that one.
 
 Once `<target-branch>` is resolved, fetch it and gather diff stats:
 
@@ -151,4 +135,6 @@ az repos pr work-item add --id <prId> --work-items <id>
 
 ### 6. Return the PR URL
 
-Return the PR URL. If the PR could not be created, explain the blocking reason plainly.
+Return the PR URL that the user can click and navigate to PR. If the PR could not be created, explain the blocking reason plainly.
+
+**Always return the PR URL as the final line of your response, even when the PR already existed.**
