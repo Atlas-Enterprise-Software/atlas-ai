@@ -72,7 +72,7 @@ Inside an interactive Copilot CLI session, run:
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| `atlas-ai-plugins` | 1.0.0 | Skills, agents, and hooks for the Atlas Development team |
+| `atlas-ai-plugins` | 1.7.0 | Skills, agents, commands, and hooks for the Atlas Development team |
 
 ### Skills included
 
@@ -87,6 +87,22 @@ Inside an interactive Copilot CLI session, run:
 | `atlas-blazor-side-panel-editor` | Generates an Azure DevOps backlog for adding create/edit/delete via a lateral side panel editor |
 | `atlas-blazor-new-component` | Generates an Azure DevOps backlog for adding a new reusable Blazor component (with or without backend data) |
 | `atlas-blazor-new-module` | Generates an Azure DevOps backlog for scaffolding a complete new Blazor feature module from scratch |
+
+### Agents included
+
+| Agent | Description |
+|-------|-------------|
+| `planner` | Turns a feature request into an implementation spec (`.pipeline/spec.md`). First stage of the feature pipeline |
+| `coder` | Implements the spec, writing a change summary to `.pipeline/changes.md`. Second stage |
+| `tester` | Writes and runs tests for the changes, reporting to `.pipeline/test-results.md`. Third stage |
+| `reviewer` | Read-only final review against spec, changes, and tests, producing a verdict in `.pipeline/review.md`. Fourth stage |
+
+### Commands included
+
+| Command | Description |
+|---------|-------------|
+| `/ship` | Runs the full feature pipeline (planner → coder → tester → reviewer) |
+| `/pr` | Opens or updates an Azure DevOps PR via the `atlas-azure-devops-pr` skill — never commits |
 
 ## Installation
 
@@ -184,7 +200,8 @@ ATLAS.AI.MARKETPLACE/
 │       ├── skills/
 │       │   └── atlas-azure-devops-pr/  # Skill: Azure DevOps PR workflow
 │       │       └── SKILL.md              # Shared across all platforms
-│       ├── agents/                       # Custom agents (future)
+│       ├── agents/                       # Custom subagents (planner, coder, tester, reviewer)
+│       ├── commands/                     # Slash commands (/ship, /pr)
 │       └── hooks/                        # Lifecycle hooks (future)
 └── README.md
 ```
@@ -250,6 +267,31 @@ ATLAS.AI.MARKETPLACE/
 ### Modifying an existing agent
 
 1. Edit the agent `.md` file inside `plugins/atlas-ai-plugins/agents/`
+2. Bump `version` in `plugin.json` and `marketplace.json` (patch: `1.0.0` → `1.0.1`)
+3. Commit and push to `main`
+4. Notify the team to run `copilot plugin update atlas-ai-plugins` (Copilot CLI) or `claude plugin update atlas-ai-plugins` (Claude Code)
+
+### Adding a new command
+
+1. Create a Markdown file at `plugins/atlas-ai-plugins/commands/<command-name>.md` (the file name becomes the slash command, e.g. `ship.md` → `/ship`)
+2. Include YAML frontmatter and the prompt body:
+
+   ```markdown
+   ---
+   description: "One-line summary shown in the command list."
+   argument-hint: <what to pass after the command>
+   ---
+
+   Prompt for the model. Use $ARGUMENTS to inject what the user typed.
+   ```
+
+3. Bump `version` in `plugin.json` and `marketplace.json` (minor bump: `1.0.0` → `1.1.0`)
+4. Commit and push to `main`
+5. Notify the team to run `copilot plugin update atlas-ai-plugins` (Copilot CLI) or `claude plugin update atlas-ai-plugins` (Claude Code)
+
+### Modifying an existing command
+
+1. Edit the command `.md` file inside `plugins/atlas-ai-plugins/commands/`
 2. Bump `version` in `plugin.json` and `marketplace.json` (patch: `1.0.0` → `1.0.1`)
 3. Commit and push to `main`
 4. Notify the team to run `copilot plugin update atlas-ai-plugins` (Copilot CLI) or `claude plugin update atlas-ai-plugins` (Claude Code)
