@@ -72,7 +72,7 @@ Inside an interactive Copilot CLI session, run:
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| `atlas-ai-plugins` | 1.7.0 | Skills, agents, commands, and hooks for the Atlas Development team |
+| `atlas-ai-plugins` | 1.8.0 | Skills, agents, commands, and hooks for the Atlas Development team |
 
 ### Skills included
 
@@ -92,17 +92,19 @@ Inside an interactive Copilot CLI session, run:
 
 | Agent | Description |
 |-------|-------------|
-| `planner` | Turns a feature request into an implementation spec (`.pipeline/spec.md`). First stage of the feature pipeline |
-| `coder` | Implements the spec, writing a change summary to `.pipeline/changes.md`. Second stage |
-| `tester` | Writes and runs tests for the changes, reporting to `.pipeline/test-results.md`. Third stage |
-| `reviewer` | Read-only final review against spec, changes, and tests, producing a verdict in `.pipeline/review.md`. Fourth stage |
+| `planner` | Turns a feature request into an implementation spec (`.ship/spec.md`). First stage of the feature pipeline |
+| `coder` | Implements the spec, writing a change summary to `.ship/changes.md`. Second stage |
+| `tester` | Writes and runs tests for the changes, reporting to `.ship/test-results.md`. Third stage |
+| `reviewer` | Read-only final review against spec, changes, and tests, producing a verdict in `.ship/review.md`. Fourth stage |
+
+> **Note:** When a feature request is ambiguous, the `planner` agent uses the **grill-me** skill to interrogate the request before writing the spec. **grill-me** is an external, optional skill — it is not bundled in this plugin and must be installed separately. The planner guards the step with an "if available" check, so the pipeline degrades gracefully when **grill-me** isn't installed.
 
 ### Commands included
 
 | Command | Description |
 |---------|-------------|
 | `/ship` | Runs the full feature pipeline (planner → coder → tester → reviewer) |
-| `/pr` | Opens or updates an Azure DevOps PR via the `atlas-azure-devops-pr` skill — never commits |
+| `/raise-pr` | Opens or updates an Azure DevOps PR via the `atlas-azure-devops-pr` skill — never commits |
 
 ## Installation
 
@@ -201,7 +203,7 @@ ATLAS.AI.MARKETPLACE/
 │       │   └── atlas-azure-devops-pr/  # Skill: Azure DevOps PR workflow
 │       │       └── SKILL.md              # Shared across all platforms
 │       ├── agents/                       # Custom subagents (planner, coder, tester, reviewer)
-│       ├── commands/                     # Slash commands (/ship, /pr)
+│       ├── commands/                     # Slash commands (/ship, /raise-pr)
 │       └── hooks/                        # Lifecycle hooks (future)
 └── README.md
 ```
