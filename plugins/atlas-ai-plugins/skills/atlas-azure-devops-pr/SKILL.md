@@ -1,7 +1,7 @@
 ---
 name: atlas-azure-devops-pr
 description: "Use this skill whenever the user wants to create a PR, open a pull request, review branch differences, or prepare code for review in an Atlas/Azure DevOps repository. Trigger this skill when someone mentions 'PR', 'pull request', 'hacer PR', 'crea una PR', 'subir cambios', 'review my changes', 'merge to main', or asks to link a PBI or work item to their branch. Also trigger when the user finishes implementing a feature or fix and their next logical step is getting it reviewed or merged — even if they don't say 'pull request' explicitly."
-version: 1.3.0
+version: 1.4.0
 ---
 
 # atlas-azure-devops-pr
@@ -75,18 +75,25 @@ Never claim a PR was created when the branch changes are not in remote history.
 
 ### 3. Version-bump check
 
-Run both checks. If either fires, stop and warn the user before continuing.
+Run both checks against committed **and uncommitted (working-tree)** changes. If either fires, stop and warn the user before continuing.
+
+Both checks run against the same set of changed files, so a client change is detected whether it is committed on the branch, staged/unstaged in the working tree, or a new untracked file. Define that set once and reuse it in both checks:
+```bash
+changed_files() { { git diff --name-only origin/<target-branch>...HEAD; git diff --name-only HEAD; git ls-files --others --exclude-standard; } | sort -u; }
+```
+It unions three sources: `origin/<target-branch>...HEAD` (committed changes), `git diff --name-only HEAD` (staged + unstaged), and `git ls-files --others --exclude-standard` (new untracked files).
 
 **Direct:** was the `.csproj` itself modified?
 ```bash
-git diff --name-only origin/<target-branch>...HEAD | grep -E "Clients?\.csproj$"
+changed_files | grep -E "Clients?\.csproj$"
 ```
 
 **Indirect:** were any files changed inside a client project directory? (covers new requests, responses, or endpoints — `.csproj` unchanged in SDK-style projects)
 ```bash
+files=$(changed_files)
 git ls-files | grep -E "Clients?\.csproj$" | while read f; do
   dir=$(dirname "$f")
-  git diff --name-only origin/<target-branch>...HEAD | grep -q "^${dir}/" && echo "$f"
+  echo "$files" | grep -q "^${dir}/" && echo "$f"
 done
 ```
 
