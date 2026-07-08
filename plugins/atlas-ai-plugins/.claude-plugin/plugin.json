@@ -1,7 +1,7 @@
 {
   "name": "atlas-ai-plugins",
   "description": "Skills, agents, commands, and hooks for the Atlas Development team",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "author": {
     "name": "Atlas Development",
     "email": "rafael@atlassoftware.es"
