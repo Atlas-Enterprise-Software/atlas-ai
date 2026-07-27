@@ -1,7 +1,7 @@
 ---
 name: atlas-nuget-updater
 description: "Update NuGet packages for one or more .NET solutions in Atlas repositories. Use this skill whenever the user wants to update NuGets, upgrade packages, refresh dependencies, or says 'actualiza los nugets', 'actualiza los paquetes', 'update nugets', 'quiero actualizar las dependencias', 'hay nugets desactualizados'. Also trigger when the user mentions a solution and wants to check for outdated packages — even if they don't say 'NuGet' explicitly."
-version: 1.0.0
+version: 1.0.1
 ---
 
 # atlas-nuget-updater
@@ -17,7 +17,7 @@ Automate the full NuGet update cycle for one or more .NET solutions:
 5. Update packages using the correct strategy for each project
 6. Verify the solution compiles and all tests pass
 
-After verification, this skill automatically invokes atlas-azure-devops-pr to create the PR.
+After verification, this skill automatically invokes atlas-pr-platform to create the PR.
 
 > All shell commands in this skill use **bash** (available via Git Bash on Windows).
 > JSON parsing and date calculations use **PowerShell** (`pwsh`) — always present on Windows.
@@ -351,9 +351,9 @@ If there are infrastructure test failures, set `tests: passed (infrastructure fa
 
 ## Step 9 — Create the Pull Request
 
-After printing the Output Summary, immediately invoke the `atlas-ai-plugins:atlas-azure-devops-pr` skill using the Skill tool. Do not ask for confirmation — proceed directly.
+After printing the Output Summary, immediately invoke the `atlas-ai-plugins:atlas-pr-platform` skill using the Skill tool. Do not ask for confirmation — proceed directly.
 
-The PR skill will read the current git state, generate title and description from the diff (the updated `.props` and `.csproj` files), and create the PR in Azure DevOps.
+The PR skill will read the current git state, generate title and description from the diff (the updated `.props` and `.csproj` files), and create the PR on whichever platform the remote points at.
 
 Skip this step only if:
 - The Output Summary was not produced (build or test failure that stopped execution early)

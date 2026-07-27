@@ -72,13 +72,13 @@ Inside an interactive Copilot CLI session, run:
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| `atlas-ai-plugins` | 1.8.0 | Skills, agents, commands, and hooks for the Atlas Development team |
+| `atlas-ai-plugins` | 2.0.0 | Skills, agents, commands, and hooks for the Atlas Development team |
 
 ### Skills included
 
 | Skill | Description |
 |-------|-------------|
-| `atlas-azure-devops-pr` | Standardizes PR creation for Atlas repositories hosted in Azure DevOps |
+| `atlas-pr-platform` | The pull-request layer for Atlas repositories, platform-agnostic behind an adapter contract — Azure DevOps today, one file per platform to add more. Creates and updates PRs, and reads and answers review comments |
 | `atlas-appinsights-failures` | Standardizes failure tracking for Atlas Azure Resources using Azure Application Insights |
 | `atlas-nuget-updater` | Automates NuGet package updates for one or more .NET solutions, verifies build and tests, and creates a PR |
 | `atlas-webapi-backlog-generator` | Generates a full Azure DevOps backlog for a new .NET Web API following Atlas Clean Architecture |
@@ -99,12 +99,58 @@ Inside an interactive Copilot CLI session, run:
 
 > **Note:** When a feature request is ambiguous, the `planner` agent uses the **grill-me** skill to interrogate the request before writing the spec. **grill-me** is an external, optional skill — it is not bundled in this plugin and must be installed separately. The planner guards the step with an "if available" check, so the pipeline degrades gracefully when **grill-me** isn't installed.
 
+### Platform support
+
+Nothing in the plugin hardcodes a hosting platform. Platform knowledge lives in exactly one place — the `atlas-pr-platform` skill — behind an **operation contract**:
+
+```
+agents/            planner, coder, tester, reviewer                 ← pure git, no platform at all
+commands/          /raise-pr                                        ← knows only the contract
+skills/atlas-pr-platform/
+  SKILL.md         platform detection, transport selection, the contract,
+                   and every platform-independent step (change-type inference,
+                   version-bump check, PR title/description generation)
+  references/      azure-devops.md                                  ← the only file that names an API
+                   _ADAPTER-TEMPLATE.md                             ← the form for adding the next one
+```
+
+The contract is 9 operations: `RESOLVE_REPO`, `RESOLVE_IDENTITY`, `FIND_OPEN_PR`, `CREATE_PR`, `UPDATE_PR`, `LINK_WORK_ITEM`, `LIST_THREADS`, `REPLY_TO_THREAD`, `RESOLVE_THREAD`. An adapter maps each to real tools, and may mark one **unsupported** — either skipped and reported, or served by a substitute the adapter documents, with the difference reported. What no caller may do is improvise a lookalike the adapter didn't name.
+
+| Platform | Hosts | Transports (MCP preferred, CLI fallback) | Status |
+|----------|-------|------------------------------------------|--------|
+| Azure DevOps | `dev.azure.com`, `*.visualstudio.com` | `mcp__azure-devops*` · `az` + `azure-devops` extension | Verified against a real PR |
+
+When a remote host has no adapter, or no transport is installed, the skill **stops and says what to install or configure**. It never falls back to another platform's API, never guesses at a REST endpoint, and never reports a PR that wasn't created.
+
+### Adding a platform
+
+Copy `references/_ADAPTER-TEMPLATE.md` to `references/<platform>.md` and fill it in. Then two one-line additions to `SKILL.md` — a row in the host table, and the platform's CLI in the availability check — plus an eval and a version bump.
+
+**Nothing else changes.** No agent, no command. If adding a platform pushes you to edit one of them, the contract is missing something: fix the contract, not the caller.
+
+The template is organized around the things platforms genuinely disagree about, because those are what an adapter exists to pin down:
+
+- **Cross-references.** `#` and `!` mean different objects on different platforms, so the wrong sigil silently links nothing or links the wrong thing.
+- **Work-item linking.** Some platforms have a real PR-to-work-item artifact link; others only a `Closes #<id>` keyword — which *also closes the issue*, so it isn't equivalent and the difference gets reported.
+- **Thread filtering.** The field types and the markers for auto-generated threads. This is where adapters get written wrong.
+- **Reopen semantics.** Whether replying to a resolved thread reactivates it or leaves it resolved. Round detection depends on this.
+
+> **Write it against a real PR, not just the API docs.** The Azure DevOps adapter was first written from documentation and had four filtering bugs — a status compared as a string when the API returns an integer, a rule keyed on a field absent from the default response, and two bad author assumptions. None were visible until it ran against an actual pull request with real threads on it. The template says this too.
+
 ### Commands included
 
 | Command | Description |
 |---------|-------------|
 | `/ship` | Runs the full feature pipeline (planner → coder → tester → reviewer) |
-| `/raise-pr` | Opens or updates an Azure DevOps PR via the `atlas-azure-devops-pr` skill — never commits |
+| `/raise-pr` | Opens or updates a PR on any supported platform via the `atlas-pr-platform` skill — never commits |
+
+### Upgrading to 2.0.0 (breaking)
+
+The `atlas-azure-devops-pr` skill (v1.4.0) is **gone**, replaced by `atlas-pr-platform`. Its whole workflow was carried over unchanged — target-branch resolution, change-type inference, the `*Client(s).csproj` version-bump check, the `<repo>: <description>` title format, the English-only rule — with the Azure-specific API calls moved into `references/azure-devops.md`.
+
+- Invoking it **by name** (`Skill: atlas-azure-devops-pr`, `/atlas-azure-devops-pr`) → use `atlas-pr-platform`, or just `/raise-pr`.
+- Invoking it **by intent** ("crea una PR") → nothing to change; the new skill's description covers the same triggers.
+- In-plugin callers already updated: `atlas-nuget-updater` (Step 9) and `atlas-webapi-crud-operation` (Step 7).
 
 ## Installation
 
@@ -200,8 +246,9 @@ ATLAS.AI.MARKETPLACE/
 │       │   └── plugin.json               # Plugin manifest (Claude Code)
 │       ├── plugin.json                   # Plugin manifest (Copilot CLI)
 │       ├── skills/
-│       │   └── atlas-azure-devops-pr/  # Skill: Azure DevOps PR workflow
-│       │       └── SKILL.md              # Shared across all platforms
+│       │   └── atlas-pr-platform/      # Skill: PR workflow + one adapter per platform
+│       │       ├── SKILL.md            # Platform-independent workflow + operation contract
+│       │       └── references/         # azure-devops.md + _ADAPTER-TEMPLATE.md
 │       ├── agents/                       # Custom subagents (planner, coder, tester, reviewer)
 │       ├── commands/                     # Slash commands (/ship, /raise-pr)
 │       └── hooks/                        # Lifecycle hooks (future)

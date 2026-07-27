@@ -81,6 +81,10 @@ steps:
       echo "=== 6. Skill version bump ==="
       for f in $CHANGED; do
         echo "$f" | grep -qE '^plugins/.*/skills/.*/SKILL\.md$' || continue
+        if [ ! -f "$f" ]; then
+          echo "OK: $f eliminada (skill borrada o renombrada) — el bump del plugin lo cubre el check 5"
+          continue
+        fi
         SKILL_VER=$(grep -m1 '^version:' "$f" | sed 's/version:[[:space:]]*//')
         if git show "origin/main:$f" &>/dev/null; then
           MAIN_SKILL_VER=$(git show "origin/main:$f" | grep -m1 '^version:' | sed 's/version:[[:space:]]*//')

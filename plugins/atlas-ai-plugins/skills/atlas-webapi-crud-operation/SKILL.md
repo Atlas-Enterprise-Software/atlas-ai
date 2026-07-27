@@ -1,7 +1,7 @@
 ---
 name: atlas-webapi-crud-operation
 description: "Implement a single CRUD operation (List, Get, Create, Update, or Delete) in an Atlas .NET Minimal API following Clean Architecture. Use this skill whenever the user wants to implement an endpoint, add a new operation to an existing API, develop a PBI related to a CRUD operation, or says things like 'implement the create endpoint', 'add the delete operation', 'develop PBI #123', 'implement the get by id', 'code the update endpoint', 'hacer el endpoint de creación', 'implementar el PBI', 'desarrollar la operación de listado'. Also trigger when the user says they want to start working on a PBI that involves a backend CRUD operation, even if they don't mention 'endpoint' explicitly."
-version: 1.0.0
+version: 1.0.1
 ---
 
 # atlas-webapi-crud-operation
@@ -183,7 +183,7 @@ git worktree add "$WORKTREE_PATH" -b "$BRANCH" origin/main
 All exploration (Step 5) and code generation (Step 6) must happen **inside the worktree path** — never modify files in the original checkout.
 
 At the end of Step 7, tell the user:
-> "All changes are in the worktree at `<WORKTREE_PATH>` on branch `<BRANCH>`. Run `/atlas-azure-devops-pr` from that directory when you are ready to open a PR."
+> "All changes are in the worktree at `<WORKTREE_PATH>` on branch `<BRANCH>`. Run `/raise-pr` from that directory when you are ready to open a PR."
 
 If the worktree already exists (e.g. a previous run), reuse it — do not fail.
 
