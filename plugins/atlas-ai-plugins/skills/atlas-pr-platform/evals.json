@@ -28,7 +28,7 @@
     {
       "id": 5,
       "prompt": "revisa los comentarios de la PR de esta rama",
-      "expected_output": "The skill should resolve the platform, find the open PR for the current branch, list only unresolved human-authored threads (dropping system, policy, build, vote, and bot entries per the adapter's filtering rules), and report each with file, line, author, and the verbatim comment. It must NOT reply to or resolve any thread without explicit approval of the exact text.",
+      "expected_output": "The skill should resolve the platform, find the open PR for the current branch, and list the unresolved review threads, dropping the platform's own entries (policy, build, vote, joined-as-reviewer) per the adapter's filtering rules. The filter must be on thread state, not on who authored it: an automated reviewer's real review comments are kept, while vote and policy entries are dropped even though they carry real user identities. Each thread reported with file, line, author, and the verbatim comment. It must NOT reply to or resolve any thread without explicit approval of the exact text.",
       "files": []
     },
     {
@@ -41,6 +41,12 @@
       "id": 9,
       "prompt": "revisa los comentarios de la PR y arréglalos",
       "expected_output": "On a thread already answered twice (round 3): report it plainly as no longer a coding problem and hand it to the human, instead of proposing a third fix. Two attempts have already missed the point, so the round number and the previous replies must be surfaced rather than another guess.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "revisa los comentarios de la PR de esta rama",
+      "expected_output": "On a PR where a thread was resolved but a later review summary links back to it with a discussionId query parameter and disputes it: the thread must appear in the fix list, flagged as reopened by citation with its round number, even though its status is Fixed and a status-filtered query does not return it. Reporting a clean list because the status filter hid it is a failure.",
       "files": []
     },
     {

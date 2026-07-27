@@ -32,7 +32,7 @@ Branch refs: **fully qualified** — `refs/heads/<branch>`.
 | `CREATE_PR` | `repo_create_pull_request` | `az repos pr create --source-branch <b> --target-branch <t> --title "<title>" --description "<markdown>"` |
 | `UPDATE_PR` | `repo_update_pull_request` | `az repos pr update --id <prId> --title "<title>" --description "<markdown>"` |
 | `LINK_WORK_ITEM` | `wit_link_work_item_to_pull_request` | `az repos pr work-item add --id <prId> --work-items <id>` |
-| `LIST_THREADS` | `repo_list_pull_request_threads` with `status: "Active"` — it already embeds every comment with `author.uniqueName` and `publishedDate`, so one call is usually enough. Only fall back to `repo_list_pull_request_thread_comments` for a thread whose comment list looks truncated | not supported — use MCP |
+| `LIST_THREADS` | `repo_list_pull_request_threads` with `status: "Active"` — it already embeds every comment with `author.uniqueName` and `publishedDate`, so one call is usually enough. Then resolve citations (see below), which needs a second unfiltered call. Only fall back to `repo_list_pull_request_thread_comments` for a thread whose comment list looks truncated | not supported — use MCP |
 | `REPLY_TO_THREAD` | `repo_reply_to_comment` | not supported — use MCP |
 | `RESOLVE_THREAD` | `repo_update_pull_request_thread` (status `fixed`) | not supported — use MCP |
 
@@ -78,6 +78,17 @@ File and line come from the thread's `threadContext` (`filePath`, `rightFileStar
 One PR-level shape to recognize: a reviewer's **summary** post (a "code review summary" with an overall vote and no file). It passes the status filter and is worth reading, but it is **informational** — it is a verdict on the PR, not a change request. Never turn it into a fix for the `coder`.
 
 **Reactivation:** replying to a thread whose status is `2` (Fixed) sets it back to `1` (Active). That is the reopen signal — the status alone does not distinguish it from a new thread, so match our own `author.uniqueName` against `RESOLVE_IDENTITY` and count our comments (see *Round detection* in `SKILL.md`).
+
+**Reopened by citation.** A reviewer can also leave your resolution alone and re-raise the point from a later comment, typically the review summary. The thread keeps `status: 2`, so `status: "Active"` never returns it and the objection vanishes from the fix list while staying live in the review. Resolve citations explicitly:
+
+1. Read the PR-level comments (`threadContext: null`), summaries included. On this platform a citation is a link back to the thread carrying a `discussionId=<id>` query parameter:
+   `.../pullrequest/<prId>?discussionId=272473`
+   A bare `!<id>` or `#<id>` in a body is **not** a thread reference here — those are PR and work-item references (see below).
+2. Collect every `discussionId` value found, and drop the ones already in your active set.
+3. For each id left, fetch that thread — `repo_list_pull_request_threads` **without** the `status` filter, then select by `id` — and add it, flagged as reopened by citation.
+4. A citation only counts when it is published **after** the thread was resolved and disputes it. A summary that merely lists what was fixed is not a reopen; read the sentence around the link before deciding.
+
+The summary post is usually edited in place rather than reposted, so compare its `lastUpdatedDate` against the thread's, not its `publishedDate`.
 
 `RESOLVE_IDENTITY` fallback: `git config user.email` matches `author.uniqueName` in most Atlas organizations. Use it when neither the MCP identity call nor `az ad` is available, and say which source you used — a wrong identity match silently turns a reopened thread back into a "new" one.
 

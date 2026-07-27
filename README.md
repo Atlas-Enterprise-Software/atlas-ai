@@ -72,7 +72,7 @@ Inside an interactive Copilot CLI session, run:
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| `atlas-ai-plugins` | 2.0.0 | Skills, agents, commands, and hooks for the Atlas Development team |
+| `atlas-ai-plugins` | 2.1.0 | Skills, agents, commands, and hooks for the Atlas Development team |
 
 ### Skills included
 
@@ -92,20 +92,50 @@ Inside an interactive Copilot CLI session, run:
 
 | Agent | Description |
 |-------|-------------|
+| `orchestrator` | Drives the whole pipeline: delegates each stage, retries what fails with the feedback attached, and halts at human gates. Keeps its state in `.ship/state.json` so a run is resumable |
 | `planner` | Turns a feature request into an implementation spec (`.ship/spec.md`). First stage of the feature pipeline |
 | `coder` | Implements the spec, writing a change summary to `.ship/changes.md`. Second stage |
 | `tester` | Writes and runs tests for the changes, reporting to `.ship/test-results.md`. Third stage |
-| `reviewer` | Read-only final review against spec, changes, and tests, producing a verdict in `.ship/review.md`. Fourth stage |
+| `reviewer` | Read-only review against spec, changes, and tests, producing a verdict in `.ship/review.md`. Run three at a time by the orchestrator, one per lens |
+| `pr-feedback` | Reads the unresolved review comments on the current branch's open PR — on any supported platform — and turns them into an actionable fix list in `.ship/pr-feedback.md` |
 
 > **Note:** When a feature request is ambiguous, the `planner` agent uses the **grill-me** skill to interrogate the request before writing the spec. **grill-me** is an external, optional skill — it is not bundled in this plugin and must be installed separately. The planner guards the step with an "if available" check, so the pipeline degrades gracefully when **grill-me** isn't installed.
+
+### Orchestration
+
+The commands no longer walk the stages themselves. They delegate to the `orchestrator` agent, which delegates to the specialists — so the pipeline gets real control flow instead of a linear sequence the main conversation might drift out of.
+
+**The split is mechanism vs. policy.** The orchestrator is the engine: state, handoff verification, retries, gates, parallelism. It knows nothing about *which* stages exist or what order they belong in — that arrives as a **pipeline definition** from the command that invoked it:
+
+```json
+{ "stage": "tester", "agent": "atlas-ai-plugins:tester", "handoff": ".ship/test-results.md",
+  "onFailure": "coder", "fanOut": [...], "gateBefore": "...", "gateAfter": "..." }
+```
+
+`/ship` owns the `feature` flow, `/address-pr` owns the `pr-feedback` flow. Adding a third pipeline means writing a stage list in a new command — the orchestrator doesn't change. And because `onFailure` and the gates are declared per stage, even the retry edges are policy: nothing in the engine says "tests failing goes back to the coder".
+
+| Capability | How it works |
+|------------|--------------|
+| **Fix loop** | A stage that fails and declares `onFailure` sends the work back to the named stage, with the failures quoted verbatim in `.ship/fix-request.md`. Capped at 3 attempts, and it stops early when the same failure repeats — a loop that isn't converging is reported, not retried. A stage with no `onFailure` opens a gate instead: some failures are decisions, not retries |
+| **Resume** | Every stage transition rewrites `.ship/state.json`, **including the pipeline itself** under `stages`. A crashed, closed, or gated run continues with a bare `/ship` — no flags, and pipeline-agnostic: the flow is read out of the state file, so `/ship` resumes an interrupted `/address-pr` run without knowing what that flow contains. Persisting `stages` is what makes that possible. Starting a new run while one is unfinished stops and asks rather than overwriting the resume point |
+| **Parallelism** | The review stage fans out to three `reviewer` subagents at once — correctness, security, performance — each writing its own file, consolidated into one verdict, most severe wins: `BLOCK` if any lens blocks, `NEEDS WORK` if any lens asks for changes, `SHIP` only when all three agree. The middle tier matters — `NEEDS WORK` is what sends the work back to the coder, while `BLOCK` halts at a gate instead of retrying. Read-only stages only; `coder` and `tester` never run concurrently |
+| **Human gates** | Most gates are declared by the pipeline — `gateAfter` for "approve what just happened", `gateBefore` for "approve what is about to happen", used for anything irreversible. Two are the orchestrator's own, because it's what detects them: `stuck` and `blocked`. A subagent has no `AskUserQuestion` tool, so the orchestrator writes the gate to state and stops; the command runs in the main conversation and is what actually asks you |
+| **No unapproved side effects** | No stage takes an irreversible outward-facing action — posting to a hosting platform, writing to a ticket — unless `state.approvals` holds an entry naming *that exact action*. A blanket approval isn't one, and approving one action never covers the next |
+| **PR feedback** | `/address-pr` starts from the unresolved comments on the current branch's open PR, feeds them through the same coder → tester → reviewer loop, and posts replies only after you approve the exact text. It's a separate command, not a `/ship` flag: answering a review isn't implementing a request |
+| **Review rounds** | A review goes around more than once. A thread you already answered that the reviewer reopened is reported as `REOPENED (round N)` — first on the list, carrying your previous reply and their new objection, so the fix that already failed isn't retried. On round 3 the pipeline stops and hands it to you: two fixes have missed the point, and a third guess isn't what's needed. The round count is derived from the PR's own comment history, so **no local state file** is involved and nothing has to survive between runs |
+
+Nothing in the pipeline commits, pushes, or merges — the orchestrator is barred from git writes and from posting to the hosting platform unapproved. Turning the finished branch into a PR stays a separate, human-triggered step: `/raise-pr`.
+
+> **Requires subagent nesting.** The orchestrator delegates to other subagents, which needs a nesting depth of at least 2. Claude Code v2.1.219+ defaults to 3, so it works out of the box. On v2.1.217–v2.1.218 the default is 1 — set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` to `2` (or higher) in `settings.json`. When nesting is off the orchestrator refuses to run the stages itself and tells you how to fix it, rather than silently degrading.
 
 ### Platform support
 
 Nothing in the plugin hardcodes a hosting platform. Platform knowledge lives in exactly one place — the `atlas-pr-platform` skill — behind an **operation contract**:
 
 ```
-agents/            planner, coder, tester, reviewer                 ← pure git, no platform at all
-commands/          /raise-pr                                        ← knows only the contract
+agents/            orchestrator, planner, coder, tester, reviewer   ← pure git, no platform at all
+                   pr-feedback                                      ← calls the contract, knows no API
+commands/          /ship, /address-pr, /raise-pr                    ← know only the contract
 skills/atlas-pr-platform/
   SKILL.md         platform detection, transport selection, the contract,
                    and every platform-independent step (change-type inference,
@@ -141,7 +171,9 @@ The template is organized around the things platforms genuinely disagree about, 
 
 | Command | Description |
 |---------|-------------|
-| `/ship` | Runs the full feature pipeline (planner → coder → tester → reviewer) |
+| `/ship <request>` | Implements a feature request through the `orchestrator` — retries, gates, no flags |
+| `/ship` | Continues an interrupted run from `.ship/state.json`, whatever pipeline it was running |
+| `/address-pr` | Works through the review comments on the current branch's open PR, through the same pipeline |
 | `/raise-pr` | Opens or updates a PR on any supported platform via the `atlas-pr-platform` skill — never commits |
 
 ### Upgrading to 2.0.0 (breaking)
@@ -249,8 +281,8 @@ ATLAS.AI.MARKETPLACE/
 │       │   └── atlas-pr-platform/      # Skill: PR workflow + one adapter per platform
 │       │       ├── SKILL.md            # Platform-independent workflow + operation contract
 │       │       └── references/         # azure-devops.md + _ADAPTER-TEMPLATE.md
-│       ├── agents/                       # Custom subagents (planner, coder, tester, reviewer)
-│       ├── commands/                     # Slash commands (/ship, /raise-pr)
+│       ├── agents/                       # Custom subagents (orchestrator, planner, coder, tester, reviewer, pr-feedback)
+│       ├── commands/                     # Slash commands (/ship, /address-pr, /raise-pr)
 │       └── hooks/                        # Lifecycle hooks (future)
 └── README.md
 ```

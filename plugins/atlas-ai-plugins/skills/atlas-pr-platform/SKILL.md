@@ -1,7 +1,7 @@
 ---
 name: atlas-pr-platform
 description: "Use this skill whenever the user wants to create a PR, open a pull request, update an existing one, review branch differences, read or answer review comments, or prepare code for review in a repository hosted on any platform. Trigger this skill when someone mentions 'PR', 'pull request', 'hacer PR', 'crea una PR', 'subir cambios', 'review my changes', 'merge to main', 'los comentarios de la PR', or asks to link a PBI, work item, or issue to their branch. Also trigger when the user finishes implementing a feature or fix and their next logical step is getting it reviewed or merged — even if they don't say 'pull request' explicitly."
-version: 2.0.0
+version: 2.0.2
 ---
 
 # atlas-pr-platform
@@ -81,7 +81,7 @@ Every adapter implements these. Names are contract-level; the adapter maps each 
 | `CREATE_PR` | repo ids, source, target, title, description | PR id, url |
 | `UPDATE_PR` | repo ids, PR id, title, description | PR url |
 | `LINK_WORK_ITEM` | repo ids, PR id, work item / issue id | confirmation |
-| `LIST_THREADS` | repo ids, PR id | review threads: thread id, file, line, status, whether human-authored, and the **full ordered comment list** — author and timestamp on every comment |
+| `LIST_THREADS` | repo ids, PR id | review threads: thread id, file, line, status, whether it is a review thread or a platform-generated entry, and the **full ordered comment list** — author and timestamp on every comment |
 | `REPLY_TO_THREAD` | repo ids, PR id, thread id, text | confirmation |
 | `RESOLVE_THREAD` | repo ids, PR id, thread id | confirmation |
 
@@ -188,7 +188,7 @@ Branch reference format differs per platform (fully qualified `refs/heads/<branc
 When the task is reading or answering review feedback rather than creating a PR:
 
 1. `FIND_OPEN_PR` for the current branch. No open PR → say so and stop. Do not fall back to another branch's PR, and do not create one.
-2. `LIST_THREADS`. Keep threads that are unresolved and human-authored; drop policy, build, vote, and auto-generated entries. The adapter names the exact statuses and markers for its platform.
+2. `LIST_THREADS`. Keep the unresolved review threads; drop the platform's own entries — policy, build, vote, "joined as a reviewer". The adapter names the exact statuses and markers. **Filter on state, never on who wrote it:** platform entries are posted under real user identities, so author matching drops real comments and keeps noise.
 3. Read the code each comment points at before classifying it. A reviewer's one-liner usually assumes context that is in the file, not in the comment.
 4. Apply [round detection](#round-detection) to every surviving thread.
 5. `REPLY_TO_THREAD` and `RESOLVE_THREAD` are **outward-facing and irreversible**: everything on the team sees them. Never call either one unless the user has approved the exact text. Only resolve a thread whose fix is committed and pushed — a thread resolved against uncommitted work is a lie to the reviewer.
@@ -208,7 +208,17 @@ From `RESOLVE_IDENTITY` and the ordered comment list:
 - **What we said last time** = the text of our most recent comment in that thread. Carry it forward — it is the fix that did not satisfy the reviewer, and it must not be re-posted as if it were new.
 - **What they say now** = every comment after ours, verbatim. This is the actual objection.
 
-Report reopened threads **first**, ahead of first-time comments. A thread on round 3 or higher is no longer a coding problem: say so plainly and hand it to the human, rather than proposing a third fix for something two fixes have already missed.
+### Reopened by citation
+
+A thread's status is not the only way a reviewer says "this still isn't done". They may leave your resolution alone and instead **re-raise the point somewhere else** — most often in a later review summary that links back to the thread. The thread stays resolved, so a status filter drops it, and the objection disappears from the fix list while remaining live in the review.
+
+Treat a resolved thread as **reopened** when a comment published *after* it was resolved cites it — by link, by id, or by quoting it — and disputes it. Its round number is counted the same way, from our own comments in it.
+
+This costs one extra step and it is not optional: filtering by status alone will silently hide the case. After collecting the unresolved threads, read the PR-level comments — the summary posts especially — and resolve every thread reference they contain. Any cited thread that is not already in your set gets fetched and added, marked as reopened by citation. Your adapter says what a citation looks like on this platform.
+
+### Ordering
+
+Report reopened threads **first**, ahead of first-time comments, whether they were reopened by status or by citation. A thread on round 3 or higher is no longer a coding problem: say so plainly and hand it to the human, rather than proposing a third fix for something two fixes have already missed.
 
 ## 8. Return the PR URL
 
