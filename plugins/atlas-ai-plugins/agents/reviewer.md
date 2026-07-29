@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Final review of the full pipeline output. Fourth and last stage before human sign-off.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: opus
 ---
 
