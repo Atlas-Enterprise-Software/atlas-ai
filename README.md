@@ -72,7 +72,7 @@ Inside an interactive Copilot CLI session, run:
 
 | Plugin | Version | Description |
 |--------|---------|-------------|
-| `atlas-ai-plugins` | 2.2.0 | Skills, agents, commands, and hooks for the Atlas Development team |
+| `atlas-ai-plugins` | 2.3.0 | Skills, agents, commands, and hooks for the Atlas Development team |
 
 ### Skills included
 
@@ -81,6 +81,7 @@ Inside an interactive Copilot CLI session, run:
 | `atlas-pr-platform` | The pull-request layer for Atlas repositories, platform-agnostic behind an adapter contract — Azure DevOps today, one file per platform to add more. Creates and updates PRs, and reads and answers review comments |
 | `atlas-appinsights-failures` | Standardizes failure tracking for Atlas Azure Resources using Azure Application Insights |
 | `atlas-nuget-updater` | Automates NuGet package updates for one or more .NET solutions, verifies build and tests, and creates a PR |
+| `atlas-pipelines-setup` | Registers the PR/CI/CD pipeline definitions of a repository from its `pipeline-*.yml` files and copies the standard `main` branch policies from a reference repository of the same project — Azure DevOps |
 | `atlas-webapi-backlog-generator` | Generates a full Azure DevOps backlog for a new .NET Web API following Atlas Clean Architecture |
 | `atlas-blazor-new-page` | Generates an Azure DevOps backlog for adding a new page or view to an existing Blazor module |
 | `atlas-blazor-grid-page` | Generates an Azure DevOps backlog for adding a TelerikGrid listing page with full BFF integration flow |
@@ -160,6 +161,7 @@ The template is organized around the things platforms genuinely disagree about, 
 | `/ship <request>` | Implements a feature request through the four-stage pipeline: `planner` → `coder` → `tester` → `reviewer` |
 | `/address-pr` | Turns the review comments on the current branch's open PR into a fix list — triage only, the fixes are yours |
 | `/raise-pr` | Opens or updates a PR on any supported platform via the `atlas-pr-platform` skill — never commits |
+| `/setup-pipelines [reference repo]` | Creates the PR/CI/CD pipeline definitions from the repo's YAML files and applies the standard `main` branch policies via the `atlas-pipelines-setup` skill — never commits |
 
 ### Upgrading to 2.0.0 (breaking)
 

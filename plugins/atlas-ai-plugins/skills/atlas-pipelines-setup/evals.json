@@ -1,0 +1,23 @@
+{
+  "skill_name": "atlas-pipelines-setup",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create the PR, CI and CD pipelines for this repo in DevOps and set up the main branch policies like the rest of the Atlas.* repos. The yml files are on my feature branch.",
+      "expected_output": "The skill resolves org/project/repo from the remote, confirms the three YAML files exist on the current branch, lists the project's repositories by name prefix, picks the closest sibling with policies on main as the reference and says which one, creates the three definitions named '<Repo> - Pipeline PR|CI|CD' in the folder '\\Projects\\<Repo>' with default branch main, copies every main policy from the reference with the scope re-pointed and the build validation pointing at the new PR pipeline id, and ends with the summary block and the pipeline URLs. It must not commit, push or edit any file in the repository, and it must warn if pipeline-cd.yml names a CI pipeline other than the one it created.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Set up the DevOps pipelines for Atlas.Foo.Api and take the branch policies from Atlas.Bar.Api",
+      "expected_output": "The named reference repository is used for both the naming convention and the policies, without searching for a sibling. Pipelines and policies that already exist on Atlas.Foo.Api and match are reported as 'already existed' and not re-created; an existing policy whose settings differ from the reference is reported with the differing settings named and left untouched, never stopped on. A same-name pipeline pointing at another YAML stops the skill with both definitions shown. Policies are created with `az repos policy create --config` and never with `--repository-id`/`--branch` flags.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Configure the main branch policies for this repository",
+      "expected_output": "Because the repository has no pipeline-pr.yml, pipeline-ci.yml or pipeline-cd.yml on the branch, the skill stops at Step 2 listing the missing files and creates nothing — no pipeline definitions and no policies (a build validation policy needs a PR pipeline that does not exist yet). It does not offer to generate the YAML files itself.",
+      "files": []
+    }
+  ]
+}
