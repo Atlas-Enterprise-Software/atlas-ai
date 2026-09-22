@@ -1,0 +1,4 @@
+# The vendored archify engine is third-party code, replaced wholesale by
+# tools/update-engine.mjs. Keeping it byte-identical to upstream means a re-vendor shows
+# only the changes upstream actually made, instead of a line-ending diff over every file.
+plugins/atlas-ai-plugins/skills/atlas-diagram-artifact/engine/** -text

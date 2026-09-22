@@ -68,6 +68,20 @@ Inside an interactive Copilot CLI session, run:
 
 
 
+### Rendering engine for `atlas-diagram-artifact` — bundled, do not install
+
+Nothing to do: the skill ships the [archify](https://github.com/tt-a1i/archify) renderer
+inside itself, under `skills/atlas-diagram-artifact/engine/`. Do **not** install archify
+separately — a locally installed copy is ignored, so the whole team renders with the exact
+version this plugin shipped and was tested against.
+
+The bundled engine is MIT, © tt-a1i (Archify) and © Cocoon AI. Attribution, the brand-mark
+licences and the font terms are in
+[`skills/atlas-diagram-artifact/NOTICE.md`](plugins/atlas-ai-plugins/skills/atlas-diagram-artifact/NOTICE.md).
+The exact upstream commit is pinned in `engine.lock.json`, and
+[`tools/update-engine.mjs`](tools/update-engine.mjs) re-vendors it — never edit `engine/`
+by hand. See [Updating the diagram engine](#updating-the-diagram-engine).
+
 ## Available Plugins
 
 | Plugin | Version | Description |
@@ -88,6 +102,7 @@ Inside an interactive Copilot CLI session, run:
 | `atlas-blazor-side-panel-editor` | Generates an Azure DevOps backlog for adding create/edit/delete via a lateral side panel editor |
 | `atlas-blazor-new-component` | Generates an Azure DevOps backlog for adding a new reusable Blazor component (with or without backend data) |
 | `atlas-blazor-new-module` | Generates an Azure DevOps backlog for scaffolding a complete new Blazor feature module from scratch |
+| `atlas-diagram-artifact` | Renders validated architecture, workflow, sequence, data-flow and lifecycle diagrams, published as an interactive Claude Artifact with an editable `.drawio` export and verified links from each component to its source code. Renders with a bundled [archify](https://github.com/tt-a1i/archify) engine — nothing extra to install |
 
 ### Agents included
 
@@ -273,6 +288,38 @@ ATLAS.AI.MARKETPLACE/
 │       └── hooks/                        # Lifecycle hooks (future)
 └── README.md
 ```
+
+## Updating the diagram engine
+
+`atlas-diagram-artifact` renders with a vendored copy of archify. It is bundled rather
+than installed per machine so the team never diverges: one version, updated as a reviewable
+event instead of silently, differently, on each laptop.
+
+Upstream ships a notifier, not an installer, so somebody updates either way. These two
+commands make that somebody a pipeline:
+
+```bash
+node tools/update-engine.mjs                 # is an update pending?
+node tools/update-engine.mjs --apply         # download, verify, replace engine/
+node tools/verify-engine.mjs                 # the acceptance gates — must be green
+```
+
+`engine.lock.json` records what is vendored and what is tracked:
+
+- `ref:main` — a commit of upstream `main`, pinned by commit sha. **This is what we track
+  today**: Azure DevOps repositories are only supported on unreleased upstream main. Release
+  v2.16.0 hardcodes a GitHub-only URL pattern in `architecture.schema.json` and has no
+  `link_mode`, so source links would not work for any Atlas or Baviera repository.
+- `channel:stable` — a published release, verified against the manifest's own SHA-256.
+  Switch to it with `--track channel:stable` once upstream ships 2.17.
+
+The gates exist because the skill reads the engine's rendered SVG to build the `.drawio`
+export, which upstream never promised to keep stable. They check that the engine resolves
+and its major is supported, that the Azure DevOps project-name patch still applies, that
+the fourteen `data-*` attributes the export depends on are still emitted, that both
+exports still carry the graph, that the toolbar controls the artifact hides still exist,
+that an embedded font ships its licence, and that source evidence still verifies against a
+real checkout. A red gate names exactly what moved.
 
 ## Adding components to the plugin
 

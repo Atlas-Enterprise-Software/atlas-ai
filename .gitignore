@@ -400,3 +400,9 @@ FodyWeavers.xsd
 
 # Skill eval workspace outputs (iteration results, snapshots — evals.json lives in the skill dir)
 plugins/baviera-ai-plugins/skills/baviera-azure-devops-pr-workspace/
+
+# The diagram skill and its vendored archify engine both ship a CLI under bin/. The
+# [Bb]in/ rule above is meant for .NET build output and silently dropped them from the
+# commit, leaving a skill with no entry point.
+!plugins/atlas-ai-plugins/skills/*/bin/
+!plugins/atlas-ai-plugins/skills/*/engine/bin/

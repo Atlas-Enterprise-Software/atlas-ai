@@ -1,0 +1,328 @@
+{
+  "id": "dotnet",
+  "label": ".NET / Azure",
+  "skipDirectories": [
+    ".git",
+    ".vs",
+    ".idea",
+    "node_modules",
+    "bin",
+    "obj",
+    "dist",
+    "packages",
+    "TestResults",
+    "wwwroot"
+  ],
+  "packages": [
+    {
+      "match": "^Azure\\.Storage\\.Blobs",
+      "concern": "storage",
+      "kind": "blob",
+      "label": "Azure Blob Storage"
+    },
+    {
+      "match": "^Azure\\.Storage\\.Files",
+      "concern": "storage",
+      "kind": "fileshare",
+      "label": "Azure File Share"
+    },
+    {
+      "match": "^Azure\\.Storage\\.Queues",
+      "concern": "messaging",
+      "kind": "queue",
+      "label": "Azure Storage Queue"
+    },
+    {
+      "match": "^Microsoft\\.Azure\\.Cosmos",
+      "concern": "storage",
+      "kind": "cosmos",
+      "label": "Azure Cosmos DB"
+    },
+    {
+      "match": "^Microsoft\\.EntityFrameworkCore\\.SqlServer|^Microsoft\\.Data\\.SqlClient",
+      "concern": "storage",
+      "kind": "sql",
+      "label": "SQL Server"
+    },
+    {
+      "match": "^Npgsql",
+      "concern": "storage",
+      "kind": "sql",
+      "label": "PostgreSQL"
+    },
+    {
+      "match": "^StackExchange\\.Redis|Caching\\.StackExchangeRedis",
+      "concern": "storage",
+      "kind": "cache",
+      "label": "Redis"
+    },
+    {
+      "match": "^Azure\\.Search\\.Documents",
+      "concern": "storage",
+      "kind": "search",
+      "label": "Azure AI Search"
+    },
+    {
+      "match": "^Azure\\.Messaging\\.ServiceBus",
+      "concern": "messaging",
+      "kind": "servicebus",
+      "label": "Azure Service Bus"
+    },
+    {
+      "match": "^Azure\\.Messaging\\.EventGrid",
+      "concern": "messaging",
+      "kind": "eventgrid",
+      "label": "Azure Event Grid"
+    },
+    {
+      "match": "^Azure\\.Messaging\\.EventHubs",
+      "concern": "messaging",
+      "kind": "eventhub",
+      "label": "Azure Event Hubs"
+    },
+    {
+      "match": "^MassTransit",
+      "concern": "messaging",
+      "kind": "bus",
+      "label": "MassTransit"
+    },
+    {
+      "match": "^Confluent\\.Kafka",
+      "concern": "messaging",
+      "kind": "kafka",
+      "label": "Kafka"
+    },
+    {
+      "match": "SignalR",
+      "concern": "messaging",
+      "kind": "signalr",
+      "label": "SignalR"
+    },
+    {
+      "match": "^Azure\\.Security\\.KeyVault",
+      "concern": "platform",
+      "kind": "keyvault",
+      "label": "Azure Key Vault"
+    },
+    {
+      "match": "^Microsoft\\.Extensions\\.Configuration\\.AzureAppConfiguration",
+      "concern": "platform",
+      "kind": "appconfig",
+      "label": "Azure App Configuration"
+    },
+    {
+      "match": "ApplicationInsights",
+      "concern": "platform",
+      "kind": "telemetry",
+      "label": "Application Insights"
+    },
+    {
+      "match": "^Microsoft\\.Identity\\.Web|^Microsoft\\.AspNetCore\\.Authentication",
+      "concern": "platform",
+      "kind": "identity",
+      "label": "Identity provider"
+    },
+    {
+      "match": "^(Cb|Atlas)\\.[\\w.]+\\.(BFF\\.)?Client$",
+      "concern": "consumedDomains",
+      "kind": "domain-client",
+      "label": "$0"
+    }
+  ],
+  "patterns": [
+    {
+      "concern": "events",
+      "kind": "domain-event",
+      "files": "\\.cs$",
+      "pattern": "(?:public|internal)\\s+(?:sealed\\s+)?(?:record|class)\\s+(\\w+Event)\\b",
+      "label": "$1"
+    },
+    {
+      "concern": "events",
+      "kind": "publisher",
+      "files": "\\.cs$",
+      "pattern": "\\b(IEventPublisher|IIntegrationEventPublisher|IPublishEndpoint|EventGridPublisherClient)\\b",
+      "label": "$1"
+    },
+    {
+      "concern": "events",
+      "kind": "topic",
+      "files": "\\.(cs|json)$",
+      "pattern": "AddEventGridEventsAuditPublisher\\(\"([^\"]+)\"|\"(CB:EventGrid:[\\w:]+)\"",
+      "label": "$1$2"
+    },
+    {
+      "concern": "storage",
+      "kind": "blob",
+      "files": "\\.cs$",
+      "pattern": "\\b(BlobServiceClient|BlobContainerClient|GetBlobContainerClient)\\b",
+      "label": "Azure Blob Storage"
+    },
+    {
+      "concern": "storage",
+      "kind": "cosmos",
+      "files": "\\.cs$",
+      "pattern": "\\b(CosmosClient|GetContainer\\()",
+      "label": "Azure Cosmos DB"
+    },
+    {
+      "concern": "storage",
+      "kind": "relational",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w*DbContext)\\s*:",
+      "label": "$1"
+    },
+    {
+      "concern": "messaging",
+      "kind": "queue",
+      "files": "\\.cs$",
+      "pattern": "\\b(QueueClient|ServiceBusClient|ServiceBusSender|ServiceBusProcessor|QueueServiceClient)\\b",
+      "label": "$1"
+    },
+    {
+      "concern": "messaging",
+      "kind": "hub",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w+Hub)\\s*:\\s*Hub",
+      "label": "$1"
+    },
+    {
+      "concern": "messaging",
+      "kind": "subscriber",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w+)\\s*:\\s*(?:I?BackgroundService|IHostedService|IConsumer<)",
+      "label": "$1"
+    },
+    {
+      "concern": "consumedDomains",
+      "kind": "http-client",
+      "files": "\\.cs$",
+      "pattern": "AddHttpClient<\\s*I?(\\w+)",
+      "label": "$1"
+    },
+    {
+      "concern": "consumedDomains",
+      "kind": "endpoint-setting",
+      "files": "appsettings[\\w.]*\\.json$",
+      "pattern": "\"([\\w.]*(?:BaseUrl|BaseAddress|Endpoint|Uri|Url))\"\\s*:",
+      "label": "$1"
+    },
+    {
+      "concern": "entrypoints",
+      "kind": "host",
+      "files": "Program\\.cs$",
+      "pattern": "WebApplication\\.CreateBuilder|Host\\.CreateDefaultBuilder|CreateSlimBuilder",
+      "label": "Host"
+    },
+    {
+      "concern": "entrypoints",
+      "kind": "function",
+      "files": "\\.cs$",
+      "pattern": "\\[Function\\(\"([^\"]+)\"\\)\\]|\\[FunctionName\\(\"([^\"]+)\"\\)\\]",
+      "label": "$1$2"
+    },
+    {
+      "concern": "entrypoints",
+      "kind": "controller",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w+Controller)\\s*:",
+      "label": "$1"
+    },
+    {
+      "concern": "resources",
+      "kind": "blob-container",
+      "files": "\\.cs$",
+      "pattern": "GetBlobContainerClient\\(\\s*\"([^\"]+)\"",
+      "label": "$1",
+      "note": "contenedor de blobs literal"
+    },
+    {
+      "concern": "resources",
+      "kind": "blob-container",
+      "files": "\\.cs$",
+      "pattern": "public\\s+string\\s+(\\w*ContainerName)\\s*\\{[^}]*\\}\\s*=\\s*\"([^\"]+)\"",
+      "label": "$2",
+      "note": "valor por defecto de $1"
+    },
+    {
+      "concern": "resources",
+      "kind": "container",
+      "files": "\\.cs$",
+      "pattern": "const\\s+string\\s+(?:\\w*)?ContainerName\\s*=\\s*\"([^\"]+)\"",
+      "label": "$1",
+      "note": "const ContainerName"
+    },
+    {
+      "concern": "resources",
+      "kind": "database",
+      "files": "\\.cs$",
+      "pattern": "DatabaseName\\s*=\\s*\"([^\"]+)\"",
+      "label": "$1",
+      "note": "base de datos"
+    },
+    {
+      "concern": "resources",
+      "kind": "queue",
+      "files": "\\.cs$",
+      "pattern": "(?:QueueName|TopicName|SubscriptionName)\\s*=\\s*\"([^\"]+)\"|CreateSender\\(\\s*\"([^\"]+)\"",
+      "label": "$1$2",
+      "note": "cola o tópico"
+    },
+    {
+      "concern": "resources",
+      "kind": "deploy-time-setting",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w*(?:Storage|Blob|Bus|Grid|Cosmos|Queue|Search)\\w*Settings)\\b",
+      "label": "$1",
+      "note": "la identidad del recurso llega por configuración, no está en el repositorio"
+    },
+    {
+      "concern": "resources",
+      "kind": "queue",
+      "files": "\\.cs$",
+      "pattern": "const\\s+string\\s+\\w*Queue\\w*\\s*=\\s*\"([^\"]+)\"",
+      "label": "$1",
+      "note": "cola declarada"
+    },
+    {
+      "concern": "messaging",
+      "kind": "queue-consumer",
+      "files": "\\.cs$",
+      "pattern": "QueueTrigger\\(\\s*(?:\"([^\"]+)\"|(?:StorageQueueConstants\\.)?(\\w+))",
+      "label": "$1$2",
+      "note": "consume la cola"
+    },
+    {
+      "concern": "messaging",
+      "kind": "queue-producer",
+      "files": "\\.cs$",
+      "pattern": "QueueOutput\\(\\s*(?:\"([^\"]+)\"|(?:StorageQueueConstants\\.)?(\\w+))",
+      "label": "$1$2",
+      "note": "escribe en la cola"
+    },
+    {
+      "concern": "messaging",
+      "kind": "event-handler",
+      "files": "\\.cs$",
+      "pattern": "class\\s+(\\w+EventHandler)\\b",
+      "label": "$1",
+      "note": "handler de eventos"
+    },
+    {
+      "concern": "messaging",
+      "kind": "subscription-filter",
+      "files": "\\.cs$",
+      "pattern": "(?://|///)\\s*.*?\\bfilters?\\s+it\\s+down\\s+to\\s+<c>(\\w+)</c>",
+      "label": "$1",
+      "note": "filtro de la suscripción"
+    },
+    {
+      "concern": "messaging",
+      "kind": "eventgrid-trigger",
+      "files": "\\.cs$",
+      "pattern": "\\[EventGridTrigger\\]",
+      "label": "suscripción directa de Event Grid",
+      "note": "la función se suscribe al tópico sin cola intermedia"
+    }
+  ]
+}

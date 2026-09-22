@@ -1,0 +1,99 @@
+# Keeps the archify engine vendored inside atlas-diagram-artifact up to date.
+#
+# The engine is bundled so the whole team renders with one version. This job is what keeps
+# that from meaning "one old version": it checks upstream weekly, and when something moved
+# it re-vendors, runs the acceptance gates and opens a PR. A human merges. A red gate still
+# opens the PR — with the failure in it — because knowing the export broke is the point.
+trigger: none
+pr: none
+
+schedules:
+  - cron: '0 6 * * 1'
+    displayName: 'Monday 06:00 UTC'
+    branches:
+      include:
+        - main
+    always: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  branchName: 'chore/update-diagram-engine-$(Build.BuildId)'
+
+steps:
+  - checkout: self
+    persistCredentials: true
+    fetchDepth: 0
+
+  - script: |
+      set -e
+      node tools/update-engine.mjs > $(Build.ArtifactStagingDirectory)/engine-status.json
+      cat $(Build.ArtifactStagingDirectory)/engine-status.json
+      STATUS=$(jq -r '.status' $(Build.ArtifactStagingDirectory)/engine-status.json)
+      echo "##vso[task.setvariable variable=engineStatus]$STATUS"
+    displayName: 'Check upstream archify'
+
+  - script: |
+      set -e
+      node tools/update-engine.mjs --apply
+    displayName: 'Re-vendor the engine'
+    condition: eq(variables['engineStatus'], 'update_available')
+
+  # Not `set -e`: a red gate must still reach the PR body, so the failure is recorded and
+  # the job carries on to open it.
+  - script: |
+      node tools/verify-engine.mjs > gates.json 2>&1
+      echo "##vso[task.setvariable variable=gatesPassed]$?"
+      cat gates.json
+    displayName: 'Acceptance gates'
+    condition: eq(variables['engineStatus'], 'update_available')
+
+  - script: |
+      set -e
+      VERSION=$(jq -r '.version' plugins/atlas-ai-plugins/skills/atlas-diagram-artifact/engine.lock.json)
+      COMMIT=$(jq -r '.commit // .ref' plugins/atlas-ai-plugins/skills/atlas-diagram-artifact/engine.lock.json)
+
+      # Every file under plugins/ is version-gated by pipeline-pr.yml, so the bump belongs
+      # in the same commit as the engine it describes.
+      bump() { jq --arg v "$1" 'if .version then .version = $v else .plugins[0].version = $v end' "$2" > "$2.tmp" && mv "$2.tmp" "$2"; }
+      CURRENT=$(jq -r '.version' plugins/atlas-ai-plugins/plugin.json)
+      NEXT=$(echo "$CURRENT" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+      for f in .claude-plugin/marketplace.json .github/plugin/marketplace.json \
+               plugins/atlas-ai-plugins/plugin.json plugins/atlas-ai-plugins/.claude-plugin/plugin.json; do
+        bump "$NEXT" "$f"
+      done
+
+      SKILL=plugins/atlas-ai-plugins/skills/atlas-diagram-artifact/SKILL.md
+      SKILL_CURRENT=$(grep -m1 '^version:' "$SKILL" | sed 's/version:[[:space:]]*//')
+      SKILL_NEXT=$(echo "$SKILL_CURRENT" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+      sed -i "s/^version: .*/version: $SKILL_NEXT/" "$SKILL"
+
+      git config user.email "$(GIT_USER_EMAIL)"
+      git config user.name "$(GIT_USER_NAME)"
+      git checkout -b "$(branchName)"
+      git add -A
+      git commit -m "Atlas.AI.Marketplace: Update the diagram engine to archify $VERSION ($COMMIT)"
+      git push origin "$(branchName)"
+
+      GATES=$(cat gates.json)
+      if [ "$(gatesPassed)" = "0" ]; then
+        TITLE="Update the diagram engine to archify $VERSION"
+        BODY="Re-vendored by pipeline-engine-update.yml. Acceptance gates passed.\n\n\`\`\`json\n$GATES\n\`\`\`"
+      else
+        TITLE="[gates red] Update the diagram engine to archify $VERSION"
+        BODY="Re-vendored by pipeline-engine-update.yml. **The acceptance gates failed** — read what moved before merging.\n\n\`\`\`json\n$GATES\n\`\`\`"
+      fi
+
+      az repos pr create \
+        --organization "$(System.CollectionUri)" \
+        --project "$(System.TeamProject)" \
+        --repository "$(Build.Repository.Name)" \
+        --source-branch "$(branchName)" \
+        --target-branch main \
+        --title "$TITLE" \
+        --description "$BODY"
+    displayName: 'Open the update PR'
+    condition: eq(variables['engineStatus'], 'update_available')
+    env:
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)

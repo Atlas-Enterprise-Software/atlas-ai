@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/tt-a1i/archify",
+  "track": "ref:main",
+  "identity": "72c750bb070d95171dbb2244e5b62b1b7da69c12",
+  "version": "2.17.0-dev.1",
+  "ref": "main",
+  "commit": "72c750bb070d95171dbb2244e5b62b1b7da69c12",
+  "committedAt": "2026-09-16T15:04:47Z",
+  "archiveSha256": "d3d4cf7edf5f55679aba4e81275d861a63f24ab186044eb368dbe0ed2d57fc10",
+  "verifiedAgainstPublishedDigest": false,
+  "vendoredAt": "2026-09-17T17:17:06.473Z"
+}
