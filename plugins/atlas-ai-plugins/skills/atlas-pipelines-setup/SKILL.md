@@ -1,7 +1,7 @@
 ---
 name: atlas-pipelines-setup
 description: "Create the Azure DevOps pipeline definitions (PR, CI and CD) for a repository from its pipeline-pr.yml, pipeline-ci.yml and pipeline-cd.yml, and apply the team's standard main branch policies copied from a reference repository of the same project. Use this skill whenever the user wants to register or create the pipelines of a repo, or protect its main branch — phrases like 'create the pipelines', 'create the PR, CI and CD pipelines', 'set up the pipelines in DevOps', 'register the pipeline YAMLs', 'configure the main branch policies', 'set up branch policies like the other repos', 'add build validation to main', 'protect the main branch'. Also trigger right after a new repository has been scaffolded and its pipeline YAML files exist but nothing runs them yet, even if the user doesn't say 'pipeline' explicitly."
-version: 1.0.0
+version: 1.1.0
 ---
 
 # atlas-pipelines-setup
@@ -14,7 +14,7 @@ Turn a repository that already has its pipeline YAML files into a repository tha
 2. Check that the three pipeline YAML files exist on the branch
 3. Choose the reference repository the conventions are copied from
 4. Read the naming convention from it and decide what is missing on the target
-5. Create the missing pipeline definitions
+5. Create the missing pipeline definitions and turn on their build status reporting
 6. Copy the missing `main` branch policies, pointing the build validation at the new PR pipeline
 7. Report what exists now
 
@@ -124,6 +124,8 @@ When the reference has no pipelines, fall back to exactly that pattern and say s
 
 Now list the target's own definitions the same way. That listing already carries YAML path, default branch, folder and queue, so it is also the verification of what exists: for each of the three expected names decide **missing** (create in Step 5), **present and matching** (report as already existing), or **present but different** (stop, Autonomy Rules).
 
+An existing definition whose `repository.properties.reportBuildStatus` is not `"true"` still counts as matching — it is not one of the compared attributes — but add a warning naming it and the `ENABLE_BUILD_STATUS` call that fixes it. Definitions created by an earlier version of this skill are in exactly that state. The skill does not change existing pipelines, so the user decides whether to run it.
+
 ---
 
 ## Step 5 — Create the missing pipeline definitions
@@ -149,7 +151,9 @@ Two things worth knowing so you do not fight them:
 - Creation does **not** validate that the YAML exists on `main`. A definition created while the files are still on a feature branch is fine: the PR pipeline runs from the PR's merge commit, and the CI runs once the files reach `main`.
 - `--skip-first-run` (CLI) matters: the first run of a CI definition on `main` would fail while the YAML is not there yet, and a red first run confuses everyone who looks at the pipeline later.
 
-Verify each definition you created (`SHOW_PIPELINE`): YAML path, `defaultBranch: refs/heads/main`, folder and queue must match Step 4. Keep the PR pipeline's numeric id, existing or new: Step 6 needs it.
+Then turn on **Report build status** on every definition you just created (`ENABLE_BUILD_STATUS` in the adapter). Neither `pipelines_write` nor `az pipelines create` sets it, and without it the builds post no status to their commits: the repository's Files page keeps showing **Set up build** instead of the build status, even while a build is running. Neither the MCP server nor `az pipelines` can set it, so it is a GET and a PUT of the definition through `az rest`, adding `repository.properties` with `reportBuildStatus: "true"`. It only affects runs queued afterwards; commits already built stay without a status.
+
+Verify each definition you created (`SHOW_PIPELINE`): YAML path, `defaultBranch: refs/heads/main`, folder and queue must match Step 4, and `repository.properties.reportBuildStatus` must be `"true"`. Keep the PR pipeline's numeric id, existing or new: Step 6 needs it.
 
 ---
 
@@ -210,6 +214,7 @@ main branch policies:
 
 warnings:
   (none) | pipeline-cd.yml references "<name>" but the CI pipeline is "<other>"
+  | pipeline <id> (already existed) has no Report build status — the repository page shows "Set up build"; ENABLE_BUILD_STATUS fixes it
 
 next:
   - open PRs will be evaluated on their next push
@@ -254,6 +259,7 @@ missing / conflicting: <the exact list: files, pipeline names and YAML paths, se
 | `az repos policy create` answers 403 | The user lacks *Edit policies* on the repository; stop and say so |
 | `pipelines_write` / `az pipelines create` answers 403 | The user is not a Build Administrator on the project; stop and say so |
 | `pipeline-cd.yml` names a CI pipeline that does not match the created one | Warn with both names; continue — fixing the YAML is the user's call |
+| The repository's Files page shows **Set up build** although the pipelines exist and run | `reportBuildStatus` is missing on the definitions; `ENABLE_BUILD_STATUS` on each one, then the next run posts its status |
 
 ---
 

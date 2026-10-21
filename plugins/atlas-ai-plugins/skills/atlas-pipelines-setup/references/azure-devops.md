@@ -43,7 +43,8 @@ az extension show --name azure-devops --query version -o tsv || az extension add
 | `LIST_REPOS` (to choose a reference) | `repo_repository` (action `list`, `project`, `repoNameFilter: "<prefix>"` — a **substring** filter, so keep only the names that really start with the prefix) | `az repos list --org <org-url> -p "<project>" --query "[?starts_with(name,'<prefix>')].{name:name, id:id}" -o json` |
 | `LIST_PIPELINES` | `pipelines_definition` (action `list`, `project`, `repositoryId`, `repositoryType: TfsGit`, `includeAllProperties: true`) | `az pipelines list --org <org-url> -p "<project>" --repository <repo> --repository-type tfsgit -o json` |
 | `CREATE_PIPELINE` | `pipelines_write` (action `create_pipeline`, `repositoryType: AzureReposGit`, `repositoryId` GUID, `repositoryName`, `yamlPath`, `folder`, `name`) | `az pipelines create --name "<name>" --folder-path "<folder>" --repository <repo> --repository-type tfsgit --branch main --yml-path <file> --skip-first-run` |
-| `SHOW_PIPELINE` | `pipelines_definition` (action `list`, `project`, `definitionIds: [id]`, `includeAllProperties: true`) | `az pipelines show --id <id> --query "{name:name, path:path, yaml:process.yamlFilename, defaultBranch:repository.defaultBranch, queue:queue.name}"` |
+| `ENABLE_BUILD_STATUS` | not supported — use `az rest` | GET and PUT of the definition, see [Report build status](#report-build-status) |
+| `SHOW_PIPELINE` | `pipelines_definition` (action `list`, `project`, `definitionIds: [id]`, `includeAllProperties: true`) | `az pipelines show --id <id> --query "{name:name, path:path, yaml:process.yamlFilename, defaultBranch:repository.defaultBranch, queue:queue.name, reportBuildStatus:repository.properties.reportBuildStatus}"` |
 | `LIST_POLICIES` | not supported — use CLI | `az repos policy list --org <org-url> -p "<project>" --repository-id <guid> --branch main -o json` |
 | `CREATE_POLICY` | not supported — use CLI | `az repos policy create --org <org-url> -p "<project>" --config <file.json>` |
 | `LIST_PR_POLICY_EVALUATIONS` | not supported — use CLI | `az repos pr policy list --id <prId> -o json` |
@@ -64,6 +65,39 @@ Three definitions, all in the project's `\Projects\<Repo>` folder, YAML at the r
 | `<Repo> - Pipeline CD` | `pipeline-cd.yml` |
 
 The CD YAML consumes the CI by **name** (`resources.pipelines[].source: "<Repo> - Pipeline CI"`), which is why Step 2 of the skill checks it.
+
+Definitions created from the UI also carry `repository.properties` with `reportBuildStatus: "true"`. Definitions created through the API do not, and the next section adds it.
+
+## Report build status
+
+`pipelines_write` and `az pipelines create` create the definition without `repository.properties`. Without `reportBuildStatus` the builds post no status to their commits (`GET …/commits/<sha>/statuses` returns `count: 0` even after a green CI), and the repository's Files page shows **Set up build** instead of the build status. The UI option is *Edit → Triggers → YAML → Get sources → Report build status*. Neither the MCP server nor `az pipelines` can set it, so it is a GET and a PUT of the definition through `az rest`. `499b84ac-1321-427f-aa17-267ca6975798` is the Azure DevOps resource id the token is issued for:
+
+```bash
+URL="https://dev.azure.com/<org>/<project-url-encoded>/_apis/build/definitions/<id>?api-version=7.1"
+az rest --method get --resource 499b84ac-1321-427f-aa17-267ca6975798 --url "$URL" > def-<id>.json
+```
+
+Add the object to `repository` in `def-<id>.json`, keeping everything else as returned (the PUT replaces the whole definition, and the `revision` read is what lets it through):
+
+```json
+"properties": {
+  "cloneUrl": "https://<org>@dev.azure.com/<org>/<project-url-encoded>/_git/<repo>",
+  "fullName": "<repo>",
+  "defaultBranch": "refs/heads/main",
+  "isFork": "False",
+  "safeRepository": "<repo-guid>",
+  "reportBuildStatus": "true",
+  "fetchDepth": "1"
+}
+```
+
+```bash
+az rest --method put --resource 499b84ac-1321-427f-aa17-267ca6975798 --url "$URL" \
+  --headers Content-Type=application/json --body @def-<id>.json \
+  --query "{revision:revision, reportBuildStatus:repository.properties.reportBuildStatus}" -o json
+```
+
+The answer carries the next `revision` and `reportBuildStatus: "true"`. If someone saved the definition between the GET and the PUT, the PUT is rejected for a stale `revision`. Runs do not change the revision, only edits do. Redo the GET and apply the change again rather than retrying the same file. These are the values a UI-created definition carries. `fetchDepth: "1"` is the shallow fetch those definitions use, and a `checkout` step in the YAML overrides it. The change applies to runs queued afterwards: a commit that was already built keeps no status until something runs on it again.
 
 ## Policies on `main` — the shape to copy
 
@@ -129,5 +163,5 @@ Type ids are stable across an organization but the settings are the team's choic
 - Creating a pipeline definition does not check that the YAML file exists on `main`; it only fails at run time. That is fine while the files are on the PR branch.
 - Adding a build validation policy does **not** create policy evaluations on PRs that were already open: `az repos pr policy list --id <prId>` returns `[]` until the PR's next push. To validate the YAML anyway, run the PR pipeline against the branch: `az pipelines run --id <prId> --branch <branch>` and poll `az pipelines runs show --id <runId> --query status`.
 - The CD pipeline's first run stops at "resources not authorized" for every pipeline resource it declares (its CI, and any shared provisioning or deploy-tooling pipelines it declares). A project administrator authorizes them from the run page, once.
-- Definitions created through the Pipelines API (MCP `pipelines_write` or `az pipelines create`) carry no `repository.properties` object, while older definitions show `properties.reportBuildStatus: "true"`, `fetchDepth`, and so on (through `az pipelines show` the same shows as `reportBuildStatus: null`). It is not one of the compared attributes (YAML path, default branch, folder, queue) and the PR build status still reaches the PR through the build policy, so this is cosmetic.
+- Definitions created through the Pipelines API (MCP `pipelines_write` or `az pipelines create`) carry no `repository.properties` object. Older, UI-created definitions show `properties.reportBuildStatus: "true"`, `fetchDepth`, and so on (`az pipelines show` shows the missing value as `reportBuildStatus: null`). This is **not cosmetic**: the PR still gets its status through the build policy, but CI and CD builds post nothing to their commits, and the repository's Files page shows **Set up build** while the pipelines run. Seen on `Cb.Horus.Issues.Middleware` (definitions 942–944): the CI went green on `main` and the commit had 0 statuses. Fixed with [Report build status](#report-build-status).
 - Identity ids in `requiredReviewerIds` are organization-wide; they are copied as-is. Resolving them to a display name is not possible for every user (listing app registrations or identities needs directory permissions), so do not make the flow depend on it.
