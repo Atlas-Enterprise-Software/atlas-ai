@@ -44,7 +44,7 @@ az extension show --name azure-devops --query version -o tsv || az extension add
 | `LIST_PIPELINES` | `pipelines_definition` (action `list`, `project`, `repositoryId`, `repositoryType: TfsGit`, `includeAllProperties: true`) | `az pipelines list --org <org-url> -p "<project>" --repository <repo> --repository-type tfsgit -o json` |
 | `CREATE_PIPELINE` | `pipelines_write` (action `create_pipeline`, `repositoryType: AzureReposGit`, `repositoryId` GUID, `repositoryName`, `yamlPath`, `folder`, `name`) | `az pipelines create --name "<name>" --folder-path "<folder>" --repository <repo> --repository-type tfsgit --branch main --yml-path <file> --skip-first-run` |
 | `CONFIGURE_GET_SOURCES` | not supported — use `az rest` | GET and PUT of the definition, see [Get sources settings](#get-sources-settings) |
-| `SHOW_PIPELINE` | `pipelines_definition` (action `list`, `project`, `definitionIds: [id]`, `includeAllProperties: true`) | `az pipelines show --id <id> --query "{name:name, path:path, yaml:process.yamlFilename, defaultBranch:repository.defaultBranch, queue:queue.name, reportBuildStatus:repository.properties.reportBuildStatus, clean:repository.clean, cleanOptions:repository.properties.cleanOptions, labelSources:repository.properties.labelSources}"` |
+| `SHOW_PIPELINE` | `pipelines_definition` (action `list`, `project`, `definitionIds: [id]`, `includeAllProperties: true`) | `az pipelines show --id <id> --query "{name:name, path:path, yaml:process.yamlFilename, defaultBranch:repository.defaultBranch, queue:queue.name, reportBuildStatus:repository.properties.reportBuildStatus, clean:repository.clean, cleanOptions:repository.properties.cleanOptions, labelSources:repository.properties.labelSources, labelSourcesFormat:repository.properties.labelSourcesFormat}"` |
 | `LIST_POLICIES` | not supported — use CLI | `az repos policy list --org <org-url> -p "<project>" --repository-id <guid> --branch main -o json` |
 | `CREATE_POLICY` | not supported — use CLI | `az repos policy create --org <org-url> -p "<project>" --config <file.json>` |
 | `LIST_PR_POLICY_EVALUATIONS` | not supported — use CLI | `az repos pr policy list --id <prId> -o json` |
@@ -76,9 +76,9 @@ Definitions created from the UI also carry `repository.properties` with `reportB
 |------------|-------|-------|
 | Report build status | `repository.properties.reportBuildStatus` | `"true"` |
 | Clean: true, All build directories | `repository.clean` and `repository.properties.cleanOptions` | `"true"` and `"3"` |
-| Tag sources: Always | `repository.properties.labelSources` and `labelSourcesFormat` | `"46"` and `"$(build.buildNumber)"` |
+| Tag sources: Always, CI only | `repository.properties.labelSources` and `labelSourcesFormat` | CI: `"46"` and `"ci/$(build.buildNumber)"`; PR and CD: `"0"` |
 
-Without `reportBuildStatus` the builds post no status to their commits (`GET …/commits/<sha>/statuses` returns `count: 0` even after a green CI), and the repository's Files page shows **Set up build** instead of the build status. `cleanOptions` `"3"` is *All build directories* (`"0"` sources, `"1"` sources and output directory, `"2"` sources directory). `labelSources` `"46"` is *Always* and `"0"` *Never*: with `"46"` every build, PR builds included, leaves a git tag named after its build number.
+Without `reportBuildStatus` the builds post no status to their commits (`GET …/commits/<sha>/statuses` returns `count: 0` even after a green CI), and the repository's Files page shows **Set up build** instead of the build status. `cleanOptions` `"3"` is *All build directories* (`"0"` sources, `"1"` sources and output directory, `"2"` sources directory). `labelSources` `"46"` is *Always* and `"0"` *Never*. Only the CI tags: each pipeline numbers its builds on its own counter (`yyyyMMdd.r` by default) while a tag belongs to the whole repository, so a PR and a CI that run the same day get the same build number and the second one fails *Label sources* with `Failed to create ref refs/tags/<build number> at <sha>`. PR builds compile a temporary merge commit, and a CD runs on a commit its CI already tagged, so neither needs a tag; the `ci/` prefix keeps the CI's tags apart from any other tag in the repository.
 
 Neither the MCP server nor `az pipelines` can set these, so it is a GET and a PUT of the definition through `az rest`. `499b84ac-1321-427f-aa17-267ca6975798` is the Azure DevOps resource id the token is issued for:
 
@@ -102,17 +102,19 @@ In `def-<id>.json`, set `"clean": "true"` on `repository` and add the object to 
   "fetchDepth": "1",
   "cleanOptions": "3",
   "labelSources": "46",
-  "labelSourcesFormat": "$(build.buildNumber)"
+  "labelSourcesFormat": "ci/$(build.buildNumber)"
 }
 ```
+
+That is the CI. For the PR and CD definitions set `"labelSources": "0"` instead and leave out `labelSourcesFormat`.
 
 ```bash
 az rest --method put --resource 499b84ac-1321-427f-aa17-267ca6975798 --url "$URL" \
   --headers Content-Type=application/json --body @def-<id>.json \
-  --query "{revision:revision, reportBuildStatus:repository.properties.reportBuildStatus, clean:repository.clean, cleanOptions:repository.properties.cleanOptions, labelSources:repository.properties.labelSources}" -o json
+  --query "{revision:revision, reportBuildStatus:repository.properties.reportBuildStatus, clean:repository.clean, cleanOptions:repository.properties.cleanOptions, labelSources:repository.properties.labelSources, labelSourcesFormat:repository.properties.labelSourcesFormat}" -o json
 ```
 
-The answer carries the next `revision`, `reportBuildStatus: "true"`, `clean: "true"`, `cleanOptions: "3"` and `labelSources: "46"`. If someone saved the definition between the GET and the PUT, the PUT is rejected for a stale `revision`. Runs do not change the revision, only edits do. Redo the GET and apply the change again rather than retrying the same file. `cloneUrl` through `fetchDepth` are the values a UI-created definition carries; `fetchDepth: "1"` is the shallow fetch those definitions use, and a `checkout` step in the YAML overrides it, as `workspace: clean` or `checkout: clean` in the YAML overrides the clean setting. The change applies to runs queued afterwards: a commit that was already built keeps no status and no tag until something runs on it again.
+The answer carries the next `revision`, `reportBuildStatus: "true"`, `clean: "true"`, `cleanOptions: "3"`, and `labelSources: "46"` with `labelSourcesFormat: "ci/$(build.buildNumber)"` on the CI or `labelSources: "0"` on PR and CD. If someone saved the definition between the GET and the PUT, the PUT is rejected for a stale `revision`. Runs do not change the revision, only edits do. Redo the GET and apply the change again rather than retrying the same file. `cloneUrl` through `fetchDepth` are the values a UI-created definition carries; `fetchDepth: "1"` is the shallow fetch those definitions use, and a `checkout` step in the YAML overrides it, as `workspace: clean` or `checkout: clean` in the YAML overrides the clean setting. The change applies to runs queued afterwards: a commit that was already built keeps no status and no tag until something runs on it again.
 
 ## Policies on `main` — the shape to copy
 
